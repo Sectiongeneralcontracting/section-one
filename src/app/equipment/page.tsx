@@ -146,7 +146,7 @@ export default function EquipmentPage() {
                 <td className="p-3">{eq.assignments[0]?.project?.name ?? "—"}</td>
                 <td className="p-3 flex gap-2 flex-wrap">
                   {eq.status === "AVAILABLE" && (
-                    activeAction?.id === eq.id && activeAction.type === "assign" ? (
+                    activeAction && activeAction.id === eq.id && activeAction.type === "assign" ? (
                       <div className="flex gap-1">
                         <select value={assignProjectId} onChange={(e) => setAssignProjectId(e.target.value)} className="border rounded-lg px-2 py-1 text-xs">
                           <option value="">اختر مشروع</option>
@@ -162,7 +162,7 @@ export default function EquipmentPage() {
                     <button onClick={() => unassign(eq.id)} className="text-secondary text-xs">إنهاء التخصيص</button>
                   )}
                   {eq.status !== "OUT_OF_SERVICE" && (
-                    activeAction?.id === eq.id && activeAction.type === "maintenance" ? (
+                    activeAction && activeAction.id === eq.id && activeAction.type === "maintenance" ? (
                       <div className="flex gap-1 items-center">
                         <input placeholder="الوصف" value={maintForm.description} onChange={(e) => setMaintForm({ ...maintForm, description: e.target.value })} className="border rounded-lg px-2 py-1 text-xs w-28" />
                         <button onClick={() => logMaintenance(eq.id)} className="text-primary text-xs">تسجيل</button>
