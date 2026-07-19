@@ -1,0 +1,589 @@
+// ============================================================
+// Section Finance — Module 1 of Section ERP
+// Profit & Partners Management
+// Designed to scale: future modules (Contracts, Procurement,
+// HR, Payroll, Inventory, Equipment, Quality, Risk...) can be
+// added as new models/domains without touching this schema.
+// ============================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("POSTGRES_PRISMA_URL")   // Vercel Postgres pooled connection
+  directUrl = env("POSTGRES_URL_NON_POOLING")
+}
+
+// ---------------- Auth & Access Control ----------------
+
+enum Role {
+  ADMIN
+  MANAGER
+  VIEWER
+}
+
+model User {
+  id            String   @id @default(cuid())
+  name          String
+  email         String   @unique
+  passwordHash  String
+  role          Role     @default(VIEWER)
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  auditLogs     AuditLog[]
+  notifications Notification[]
+  loginAttempts LoginAttempt[]
+
+  @@map("users")
+}
+
+model LoginAttempt {
+  id        String   @id @default(cuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+  email     String
+  success   Boolean
+  ipAddress String?
+  createdAt DateTime @default(now())
+
+  @@map("login_attempts")
+}
+
+// ---------------- Company / Settings ----------------
+
+model CompanyProfile {
+  id            String  @id @default("singleton")
+  name          String  @default("Section General Contracting")
+  logoUrl       String?
+  address       String?
+  phone         String?
+  email         String?
+  website       String?
+  taxNumber     String?
+  commercialReg String?
+  updatedAt     DateTime @updatedAt
+
+  @@map("company_profile")
+}
+
+model SystemSettings {
+  id                 String   @id @default("singleton")
+  insuranceRate      Decimal  @default(0) @db.Decimal(6, 3) // نسبة التأمينات - قابلة للتعديل
+  taxRate            Decimal  @default(0) @db.Decimal(6, 3) // نسبة الضريبة
+  currency            String   @default("EGP")
+  currencyFormat      String   @default("#,##0.00")
+  defaultLanguage     String   @default("ar") // ar | en
+  updatedAt           DateTime @updatedAt
+
+  @@map("system_settings")
+}
+
+// ---------------- Core Domain: Clients / Projects ----------------
+
+model Client {
+  id          String    @id @default(cuid())
+  name        String
+  phone       String?
+  email       String?
+  address     String?
+  notes       String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  projects    Project[]
+
+  @@map("clients")
+}
+
+enum ProjectStatus {
+  ONGOING      // جارية
+  READY_TO_CLOSE // جاهزة للإغلاق
+  CLOSED       // مغلقة
+  DELAYED      // متأخرة
+}
+
+model Project {
+  id             String        @id @default(cuid())
+  code           String        @unique
+  name           String
+  clientId       String
+  client         Client        @relation(fields: [clientId], references: [id])
+  contractValue  Decimal       @db.Decimal(18, 2)
+  startDate      DateTime
+  endDate        DateTime?
+  status         ProjectStatus @default(ONGOING)
+  description    String?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  expenses            Expense[]
+  partnerAllocations   PartnerProjectAllocation[]
+  closingReports       ClosingReport[]
+  contract             Contract?
+  purchaseOrders       PurchaseOrder[]
+  stockMovements       StockMovement[]
+  equipmentAssignments EquipmentAssignment[]
+
+  @@map("projects")
+}
+
+enum ExpenseCategory {
+  MATERIALS       // مواد
+  LABOR           // عمالة
+  SUBCONTRACTOR   // مقاولي باطن
+  EQUIPMENT       // معدات
+  ADMINISTRATIVE  // مصروفات إدارية
+  OTHER
+}
+
+model Expense {
+  id          String          @id @default(cuid())
+  projectId   String
+  project     Project         @relation(fields: [projectId], references: [id])
+  category    ExpenseCategory
+  amount      Decimal         @db.Decimal(18, 2)
+  description String?
+  date        DateTime        @default(now())
+  createdById String?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@map("expenses")
+}
+
+// ---------------- Partners ----------------
+
+model Partner {
+  id           String   @id @default(cuid())
+  name         String
+  phone        String?
+  email        String?
+  defaultShare Decimal  @db.Decimal(6, 3) @default(0) // نسبة افتراضية %
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  contributions        PartnerContribution[]
+  projectAllocations   PartnerProjectAllocation[]
+
+  @@map("partners")
+}
+
+// نسبة مساهمة كل شريك في مشروع معين (قد تختلف عن defaultShare)
+model PartnerProjectAllocation {
+  id         String   @id @default(cuid())
+  partnerId  String
+  partner    Partner  @relation(fields: [partnerId], references: [id])
+  projectId  String
+  project    Project  @relation(fields: [projectId], references: [id])
+  sharePct   Decimal  @db.Decimal(6, 3) // نسبة مساهمته في هذا المشروع
+  profitAmt  Decimal? @db.Decimal(18, 2) // يُحسب عند الإغلاق
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([partnerId, projectId])
+  @@map("partner_project_allocations")
+}
+
+model PartnerContribution {
+  id          String   @id @default(cuid())
+  partnerId   String
+  partner     Partner  @relation(fields: [partnerId], references: [id])
+  amount      Decimal  @db.Decimal(18, 2)
+  date        DateTime @default(now())
+  notes       String?
+  createdAt   DateTime @default(now())
+
+  @@map("partner_contributions")
+}
+
+model ClosingReport {
+  id           String   @id @default(cuid())
+  projectId    String
+  project      Project  @relation(fields: [projectId], references: [id])
+  totalRevenue Decimal  @db.Decimal(18, 2)
+  totalExpense Decimal  @db.Decimal(18, 2)
+  netProfit    Decimal  @db.Decimal(18, 2)
+  closedAt     DateTime @default(now())
+  notes        String?
+
+  @@map("closing_reports")
+}
+
+// ============================================================
+// Module 2 — Contracts & Payment Certificates (العقود والمستخلصات)
+// ============================================================
+
+model Contract {
+  id                   String   @id @default(cuid())
+  projectId            String   @unique
+  project              Project  @relation(fields: [projectId], references: [id])
+  contractNumber       String   @unique
+  signedDate           DateTime
+  durationDays         Int?
+  retentionPct         Decimal  @default(5) @db.Decimal(5, 2)   // نسبة ضمان حسن التنفيذ
+  advancePaymentPct    Decimal  @default(0) @db.Decimal(5, 2)   // نسبة الدفعة المقدمة
+  advancePaymentAmount Decimal  @default(0) @db.Decimal(18, 2)
+  notes                String?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  boqItems     BoqItem[]
+  certificates PaymentCertificate[]
+
+  @@map("contracts")
+}
+
+// بنود جدول الكميات (Bill of Quantities)
+model BoqItem {
+  id          String   @id @default(cuid())
+  contractId  String
+  contract    Contract @relation(fields: [contractId], references: [id])
+  code        String
+  description String
+  unit        String
+  quantity    Decimal  @db.Decimal(18, 3)
+  unitPrice   Decimal  @db.Decimal(18, 2)
+  createdAt   DateTime @default(now())
+
+  @@map("boq_items")
+}
+
+enum CertificateStatus {
+  DRAFT
+  SUBMITTED
+  APPROVED
+  PAID
+}
+
+// المستخلصات — بنسبة إنجاز تراكمية زي المتبع في المقاولات المصرية
+model PaymentCertificate {
+  id                     String            @id @default(cuid())
+  contractId             String
+  contract               Contract          @relation(fields: [contractId], references: [id])
+  number                 Int
+  periodFrom             DateTime
+  periodTo               DateTime
+  cumulativePct          Decimal           @db.Decimal(5, 2) // نسبة الإنجاز التراكمية %
+  previousCumulativeValue Decimal          @default(0) @db.Decimal(18, 2)
+  cumulativeValue        Decimal           @db.Decimal(18, 2) // = cumulativePct% × قيمة العقد
+  thisPeriodValue        Decimal           @db.Decimal(18, 2) // = cumulativeValue - previousCumulativeValue
+  retentionAmount        Decimal           @db.Decimal(18, 2)
+  advanceRecoveryAmount  Decimal           @default(0) @db.Decimal(18, 2)
+  taxAmount               Decimal          @default(0) @db.Decimal(18, 2)
+  netPayable              Decimal          @db.Decimal(18, 2)
+  status                  CertificateStatus @default(DRAFT)
+  submittedDate            DateTime?
+  approvedDate              DateTime?
+  paidDate                  DateTime?
+  notes                     String?
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
+
+  @@unique([contractId, number])
+  @@map("payment_certificates")
+}
+
+// ============================================================
+// Module 3 — Suppliers & Procurement (الموردين والمشتريات)
+// ============================================================
+
+enum SupplierCategory {
+  MATERIALS
+  EQUIPMENT
+  SUBCONTRACTOR
+  SERVICES
+  OTHER
+}
+
+model Supplier {
+  id         String           @id @default(cuid())
+  name       String
+  category   SupplierCategory @default(MATERIALS)
+  phone      String?
+  email      String?
+  address    String?
+  taxNumber  String?
+  isActive   Boolean          @default(true)
+  notes      String?
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+
+  purchaseOrders PurchaseOrder[]
+
+  @@map("suppliers")
+}
+
+enum PurchaseOrderStatus {
+  DRAFT
+  APPROVED
+  RECEIVED
+  PAID
+  CANCELLED
+}
+
+model PurchaseOrder {
+  id          String              @id @default(cuid())
+  poNumber    String              @unique
+  supplierId  String
+  supplier    Supplier            @relation(fields: [supplierId], references: [id])
+  projectId   String?
+  project     Project?            @relation(fields: [projectId], references: [id])
+  status      PurchaseOrderStatus @default(DRAFT)
+  orderDate   DateTime            @default(now())
+  expectedDate DateTime?
+  notes       String?
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  items PurchaseOrderItem[]
+
+  @@map("purchase_orders")
+}
+
+model PurchaseOrderItem {
+  id              String        @id @default(cuid())
+  purchaseOrderId String
+  purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id])
+  description     String
+  unit            String
+  quantity        Decimal       @db.Decimal(18, 3)
+  unitPrice       Decimal       @db.Decimal(18, 2)
+
+  @@map("purchase_order_items")
+}
+
+// ============================================================
+// Module 4 — Warehouses & Inventory (المخازن)
+// ============================================================
+
+model Warehouse {
+  id        String   @id @default(cuid())
+  name      String
+  location  String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  movements StockMovement[]
+
+  @@map("warehouses")
+}
+
+model InventoryItem {
+  id           String   @id @default(cuid())
+  name         String
+  unit         String
+  reorderLevel Decimal  @default(0) @db.Decimal(18, 3) // حد إعادة الطلب — تحته يُعتبر مخزون منخفض
+  notes        String?
+  createdAt    DateTime @default(now())
+
+  movements StockMovement[]
+
+  @@map("inventory_items")
+}
+
+enum MovementType {
+  IN  // وارد (توريد من مورد، إرجاع من مشروع)
+  OUT // منصرف (لمشروع، تالف)
+}
+
+model StockMovement {
+  id          String        @id @default(cuid())
+  warehouseId String
+  warehouse   Warehouse     @relation(fields: [warehouseId], references: [id])
+  itemId      String
+  item        InventoryItem @relation(fields: [itemId], references: [id])
+  type        MovementType
+  quantity    Decimal       @db.Decimal(18, 3)
+  projectId   String?
+  project     Project?      @relation(fields: [projectId], references: [id])
+  date        DateTime      @default(now())
+  notes       String?
+  createdById String?
+  createdAt   DateTime      @default(now())
+
+  @@map("stock_movements")
+}
+
+// ============================================================
+// Module 5 — Equipment (المعدات)
+// ============================================================
+
+enum EquipmentStatus {
+  AVAILABLE      // متاحة
+  IN_USE         // بمشروع
+  MAINTENANCE    // بالصيانة
+  OUT_OF_SERVICE // خارج الخدمة
+}
+
+model Equipment {
+  id           String          @id @default(cuid())
+  name         String
+  type         String
+  serialNumber String?         @unique
+  status       EquipmentStatus @default(AVAILABLE)
+  purchaseDate DateTime?
+  notes        String?
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  assignments      EquipmentAssignment[]
+  maintenanceLogs  MaintenanceLog[]
+
+  @@map("equipment")
+}
+
+model EquipmentAssignment {
+  id          String     @id @default(cuid())
+  equipmentId String
+  equipment   Equipment  @relation(fields: [equipmentId], references: [id])
+  projectId   String
+  project     Project    @relation(fields: [projectId], references: [id])
+  fromDate    DateTime   @default(now())
+  toDate      DateTime?  // null = لسه بالمشروع
+  notes       String?
+  createdAt   DateTime   @default(now())
+
+  @@map("equipment_assignments")
+}
+
+model MaintenanceLog {
+  id          String    @id @default(cuid())
+  equipmentId String
+  equipment   Equipment @relation(fields: [equipmentId], references: [id])
+  date        DateTime  @default(now())
+  cost        Decimal   @default(0) @db.Decimal(18, 2)
+  description String
+  performedBy String?
+  createdAt   DateTime  @default(now())
+
+  @@map("maintenance_logs")
+}
+
+// ============================================================
+// Module 6 — HR & Payroll (الموارد البشرية والرواتب)
+// ============================================================
+
+model Employee {
+  id          String   @id @default(cuid())
+  name        String
+  jobTitle    String
+  department  String?
+  phone       String?
+  email       String?
+  nationalId  String?  @unique
+  hireDate    DateTime
+  baseSalary  Decimal  @db.Decimal(18, 2)
+  isActive    Boolean  @default(true)
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  payrollRecords    PayrollRecord[]
+  attendanceRecords AttendanceRecord[]
+
+  @@map("employees")
+}
+
+enum PayrollStatus {
+  DRAFT
+  APPROVED
+  PAID
+}
+
+model PayrollRecord {
+  id          String        @id @default(cuid())
+  employeeId  String
+  employee    Employee      @relation(fields: [employeeId], references: [id])
+  month       String        // صيغة "YYYY-MM"
+  baseSalary  Decimal       @db.Decimal(18, 2)
+  allowances  Decimal       @default(0) @db.Decimal(18, 2)
+  deductions  Decimal       @default(0) @db.Decimal(18, 2) // تأمينات/ضريبة/جزاءات
+  netSalary   Decimal       @db.Decimal(18, 2)
+  status      PayrollStatus @default(DRAFT)
+  paidDate    DateTime?
+  notes       String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@unique([employeeId, month])
+  @@map("payroll_records")
+}
+
+// ============================================================
+// Module 7 — Attendance (الحضور والانصراف)
+// ============================================================
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LEAVE
+  SICK
+}
+
+model AttendanceRecord {
+  id         String           @id @default(cuid())
+  employeeId String
+  employee   Employee         @relation(fields: [employeeId], references: [id])
+  date       DateTime
+  status     AttendanceStatus @default(PRESENT)
+  checkIn    DateTime?
+  checkOut   DateTime?
+  notes      String?
+  createdAt  DateTime         @default(now())
+
+  @@unique([employeeId, date])
+  @@map("attendance_records")
+}
+
+// ---------------- Notifications & Audit ----------------
+
+enum NotificationType {
+  PROJECT_READY_TO_CLOSE
+  PARTNER_CONTRIBUTION_EDITED
+  PROJECT_REOPENED
+  CONTRACT_VALUE_EDITED
+  EXPENSE_EDITED
+  PROJECT_CREATED
+  PROJECT_CLOSED
+  CONTRACT_CREATED
+  CERTIFICATE_SUBMITTED
+  CERTIFICATE_APPROVED
+  CERTIFICATE_PAID
+  PURCHASE_ORDER_CREATED
+  PURCHASE_ORDER_APPROVED
+  EQUIPMENT_ASSIGNED
+  EQUIPMENT_MAINTENANCE
+  PAYROLL_GENERATED
+  PAYROLL_PAID
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id])
+  type      NotificationType
+  message   String
+  isRead    Boolean          @default(false)
+  createdAt DateTime         @default(now())
+
+  @@map("notifications")
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id])
+  action     String   // e.g. "PROJECT_UPDATED", "EXPENSE_DELETED"
+  entityType String   // e.g. "Project"
+  entityId   String?
+  before     Json?
+  after      Json?
+  createdAt  DateTime @default(now())
+
+  @@map("audit_logs")
+}

@@ -1,0 +1,22 @@
+{
+  "app.name": "Section One",
+  "nav.dashboard": "Dashboard",
+  "nav.projects": "Projects",
+  "nav.clients": "Clients",
+  "nav.partners": "Partners",
+  "nav.settings": "Settings",
+  "kpi.totalContracts": "Total Contracts Value",
+  "kpi.totalExpenses": "Total Expenses",
+  "kpi.totalProfit": "Total Profit",
+  "kpi.totalContributions": "Total Partner Contributions",
+  "kpi.projectsCount": "Projects Count",
+  "kpi.clientsCount": "Clients Count",
+  "status.ongoing": "Ongoing",
+  "status.closed": "Closed",
+  "status.readyToClose": "Ready to Close",
+  "status.delayed": "Delayed",
+  "login.title": "Sign In",
+  "login.email": "Email",
+  "login.password": "Password",
+  "login.submit": "Sign In"
+}

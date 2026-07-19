@@ -1,0 +1,22 @@
+{
+  "app.name": "Section One",
+  "nav.dashboard": "الرئيسية",
+  "nav.projects": "المشاريع",
+  "nav.clients": "العملاء",
+  "nav.partners": "الشركاء",
+  "nav.settings": "الإعدادات",
+  "kpi.totalContracts": "إجمالي قيمة العقود",
+  "kpi.totalExpenses": "إجمالي المصروفات",
+  "kpi.totalProfit": "إجمالي الأرباح",
+  "kpi.totalContributions": "إجمالي مساهمات الشركاء",
+  "kpi.projectsCount": "عدد المشاريع",
+  "kpi.clientsCount": "عدد العملاء",
+  "status.ongoing": "جارية",
+  "status.closed": "مغلقة",
+  "status.readyToClose": "جاهزة للإغلاق",
+  "status.delayed": "متأخرة",
+  "login.title": "تسجيل الدخول",
+  "login.email": "البريد الإلكتروني",
+  "login.password": "كلمة المرور",
+  "login.submit": "دخول"
+}
