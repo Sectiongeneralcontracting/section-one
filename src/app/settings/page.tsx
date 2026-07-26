@@ -9,11 +9,28 @@ export default function SettingsPage() {
   const [savedMsg, setSavedMsg] = useState("");
   const [error, setError] = useState("");
   const [restoring, setRestoring] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [importResults, setImportResults] = useState<any>(null);
 
   useEffect(() => {
     fetch("/api/company-profile").then((r) => r.json()).then(setCompany);
     fetch("/api/settings").then((r) => r.json()).then(setSettings);
   }, []);
+
+  async function importContracts() {
+    if (!confirm("تأكيد استيراد العقود العشرة (رايه فودز) دفعة واحدة؟ العملية آمنة وممكن تتكرر من غير تكرار البيانات.")) return;
+    setImporting(true);
+    setImportResults(null);
+    try {
+      const res = await fetch("/api/admin/import-contracts", { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "تعذر الاستيراد");
+      setImportResults(data);
+    } catch (err: any) {
+      alert(err.message);
+    }
+    setImporting(false);
+  }
 
   async function exportBackup() {
     const res = await fetch("/api/backup");
@@ -144,6 +161,25 @@ export default function SettingsPage() {
             <input type="file" accept="application/json" onChange={importBackup} disabled={restoring} className="hidden" />
           </label>
         </div>
+      </div>
+      <div className="card space-y-3">
+        <h2 className="font-semibold">استيراد عقود رايه فودز (مرة واحدة)</h2>
+        <p className="text-sm text-neutral-500">
+          استيراد 10 مشاريع وعقود كاملة (بجداول الكميات) لشركة رايه فودز دفعة واحدة. آمن للتشغيل أكتر من مرة — أي مشروع
+          موجود بالفعل هيتجاهل.
+        </p>
+        <button onClick={importContracts} disabled={importing} className="bg-primary text-white rounded-xl px-5 py-2 text-sm font-medium disabled:opacity-60">
+          {importing ? "جارٍ الاستيراد..." : "استيراد العقود العشرة"}
+        </button>
+        {importResults && (
+          <div className="text-sm space-y-1 border-t pt-3 mt-2">
+            {importResults.results.map((r: any, i: number) => (
+              <p key={i} className="text-neutral-600">
+                <span className="font-medium">{r.project}:</span> {r.status}
+              </p>
+            ))}
+          </div>
+        )}
       </div>
     </AppShell>
   );
