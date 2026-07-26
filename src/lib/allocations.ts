@@ -16,6 +16,21 @@ export function validateAllocationTotal(
   return { valid: true, total: rounded };
 }
 
+// يحسب نسبة كل شريك تلقائيًا بناءً على قيمة مساهمته الفعلية في المشروع
+// نسبة الشريك = مساهمته ÷ إجمالي مساهمات كل الشركاء في نفس المشروع × 100
+export function computeSharesFromContributions(
+  allocations: { partnerId: string; contributionAmount: number }[]
+): { partnerId: string; contributionAmount: number; sharePct: number }[] {
+  const total = allocations.reduce((s, a) => s + Number(a.contributionAmount), 0);
+  if (total <= 0) {
+    return allocations.map((a) => ({ ...a, sharePct: 0 }));
+  }
+  return allocations.map((a) => ({
+    ...a,
+    sharePct: Math.round((Number(a.contributionAmount) / total) * 100 * 1000) / 1000,
+  }));
+}
+
 // يحسب صافي الربح لكل شريك بناءً على نسبته وصافي ربح المشروع
 export function computePartnerProfit(sharePct: number, projectNetProfit: number): number {
   return Math.round((sharePct / 100) * projectNetProfit * 100) / 100;

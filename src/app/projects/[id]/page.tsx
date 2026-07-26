@@ -25,7 +25,7 @@ export default function ProjectDetailPage() {
   const [form, setForm] = useState({ category: "MATERIALS", amount: 0, description: "" });
 
   const [allPartners, setAllPartners] = useState<any[]>([]);
-  const [allocations, setAllocations] = useState<{ partnerId: string; sharePct: number }[]>([]);
+  const [allocations, setAllocations] = useState<{ partnerId: string; contributionAmount: number }[]>([]);
   const [allocError, setAllocError] = useState("");
   const [allocSaving, setAllocSaving] = useState(false);
 
@@ -39,7 +39,7 @@ export default function ProjectDetailPage() {
     if (res.ok) {
       const data = await res.json();
       setProject(data);
-      setAllocations(data.partnerAllocations.map((a: any) => ({ partnerId: a.partnerId, sharePct: Number(a.sharePct) })));
+      setAllocations(data.partnerAllocations.map((a: any) => ({ partnerId: a.partnerId, contributionAmount: Number(a.contributionAmount) })));
       setProjectForm({ name: data.name, contractValue: Number(data.contractValue), description: data.description ?? "" });
     }
     const pRes = await fetch("/api/partners");
@@ -69,12 +69,12 @@ export default function ProjectDetailPage() {
     setAllocations((prev) =>
       prev.some((a) => a.partnerId === partnerId)
         ? prev.filter((a) => a.partnerId !== partnerId)
-        : [...prev, { partnerId, sharePct: 0 }]
+        : [...prev, { partnerId, contributionAmount: 0 }]
     );
   }
 
-  function updateAllocPct(partnerId: string, pct: number) {
-    setAllocations((prev) => prev.map((a) => (a.partnerId === partnerId ? { ...a, sharePct: pct } : a)));
+  function updateAllocAmount(partnerId: string, amount: number) {
+    setAllocations((prev) => prev.map((a) => (a.partnerId === partnerId ? { ...a, contributionAmount: amount } : a)));
   }
 
   async function saveAllocations() {
@@ -257,11 +257,15 @@ export default function ProjectDetailPage() {
       </div>
 
       <div className="card space-y-3">
-        <h2 className="font-semibold">نسب مساهمة الشركاء في هذا المشروع</h2>
-        <p className="text-xs text-neutral-400">مجموع النسب لازم يساوي 100%</p>
+        <h2 className="font-semibold">مساهمة الشركاء في هذا المشروع</h2>
+        <p className="text-xs text-neutral-400">
+          اختار الشركاء المشاركين في المشروع ده وحط قيمة مساهمة كل واحد فيهم — النسبة % بتتحسب تلقائيًا من نسبة كل شريك لإجمالي المساهمات
+        </p>
         <div className="space-y-2">
           {allPartners.map((p) => {
             const alloc = allocations.find((a) => a.partnerId === p.id);
+            const totalContrib = allocations.reduce((s, a) => s + Number(a.contributionAmount || 0), 0);
+            const pct = alloc && totalContrib > 0 ? Math.round((Number(alloc.contributionAmount) / totalContrib) * 1000) / 10 : 0;
             return (
               <div key={p.id} className="flex items-center gap-3">
                 <input
@@ -272,27 +276,32 @@ export default function ProjectDetailPage() {
                 />
                 <span className="text-sm w-40">{p.name}</span>
                 {alloc && (
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={alloc.sharePct}
-                    onChange={(e) => updateAllocPct(p.id, Number(e.target.value))}
-                    disabled={project.status === "CLOSED"}
-                    className="w-24 border rounded-lg px-2 py-1 text-sm"
-                  />
+                  <>
+                    <input
+                      type="number"
+                      step="0.01"
+                      placeholder="قيمة المساهمة"
+                      value={alloc.contributionAmount}
+                      onChange={(e) => updateAllocAmount(p.id, Number(e.target.value))}
+                      disabled={project.status === "CLOSED"}
+                      className="w-32 border rounded-lg px-2 py-1 text-sm"
+                    />
+                    <span className="text-xs text-neutral-400">ج.م</span>
+                    <span className="text-xs text-primary font-medium w-14">{alloc.contributionAmount > 0 ? `${pct}%` : "—"}</span>
+                  </>
                 )}
-                {alloc && <span className="text-xs text-neutral-400">%</span>}
               </div>
             );
           })}
+          {allPartners.length === 0 && <p className="text-sm text-neutral-400">لا يوجد شركاء مسجلين في النظام بعد.</p>}
         </div>
         <p className="text-sm text-neutral-500">
-          الإجمالي الحالي: {allocations.reduce((s, a) => s + Number(a.sharePct || 0), 0)}%
+          إجمالي المساهمات: {allocations.reduce((s, a) => s + Number(a.contributionAmount || 0), 0).toLocaleString("ar-EG")} ج.م
         </p>
         {allocError && <p className="text-danger text-sm">{allocError}</p>}
         {project.status !== "CLOSED" && (
           <button onClick={saveAllocations} disabled={allocSaving} className="bg-primary text-white rounded-xl px-4 py-2 text-sm font-medium disabled:opacity-60">
-            {allocSaving ? "جارٍ الحفظ..." : "حفظ نسب الشركاء"}
+            {allocSaving ? "جارٍ الحفظ..." : "حفظ مساهمات الشركاء"}
           </button>
         )}
       </div>

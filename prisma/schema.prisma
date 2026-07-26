@@ -175,15 +175,16 @@ model Partner {
 
 // نسبة مساهمة كل شريك في مشروع معين (قد تختلف عن defaultShare)
 model PartnerProjectAllocation {
-  id         String   @id @default(cuid())
-  partnerId  String
-  partner    Partner  @relation(fields: [partnerId], references: [id])
-  projectId  String
-  project    Project  @relation(fields: [projectId], references: [id])
-  sharePct   Decimal  @db.Decimal(6, 3) // نسبة مساهمته في هذا المشروع
-  profitAmt  Decimal? @db.Decimal(18, 2) // يُحسب عند الإغلاق
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id                 String   @id @default(cuid())
+  partnerId          String
+  partner            Partner  @relation(fields: [partnerId], references: [id])
+  projectId          String
+  project            Project  @relation(fields: [projectId], references: [id])
+  contributionAmount Decimal  @default(0) @db.Decimal(18, 2) // قيمة مساهمة الشريك الفعلية في مصروفات هذا المشروع
+  sharePct           Decimal  @db.Decimal(6, 3) // نسبة مساهمته في هذا المشروع — تُحسب تلقائيًا من contributionAmount
+  profitAmt          Decimal? @db.Decimal(18, 2) // يُحسب عند الإغلاق
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
   @@unique([partnerId, projectId])
   @@map("partner_project_allocations")

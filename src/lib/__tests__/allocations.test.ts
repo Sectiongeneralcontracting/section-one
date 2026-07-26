@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { validateAllocationTotal, computePartnerProfit } from "../allocations";
+import { validateAllocationTotal, computePartnerProfit, computeSharesFromContributions } from "../allocations";
 
 describe("validateAllocationTotal", () => {
   it("passes when the list is empty (no allocations set yet)", () => {
@@ -22,6 +22,40 @@ describe("validateAllocationTotal", () => {
   it("tolerates small floating point rounding errors", () => {
     const result = validateAllocationTotal([{ sharePct: 33.33 }, { sharePct: 33.33 }, { sharePct: 33.34 }]);
     expect(result.valid).toBe(true);
+  });
+});
+
+describe("computeSharesFromContributions", () => {
+  it("computes each partner's share proportionally to their contribution", () => {
+    const result = computeSharesFromContributions([
+      { partnerId: "p1", contributionAmount: 600000 },
+      { partnerId: "p2", contributionAmount: 400000 },
+    ]);
+    expect(result.find((r) => r.partnerId === "p1")?.sharePct).toBe(60);
+    expect(result.find((r) => r.partnerId === "p2")?.sharePct).toBe(40);
+  });
+
+  it("handles three partners with unequal contributions summing to 100", () => {
+    const result = computeSharesFromContributions([
+      { partnerId: "p1", contributionAmount: 500000 },
+      { partnerId: "p2", contributionAmount: 300000 },
+      { partnerId: "p3", contributionAmount: 200000 },
+    ]);
+    const total = result.reduce((s, r) => s + r.sharePct, 0);
+    expect(Math.round(total)).toBe(100);
+  });
+
+  it("returns 0% shares when total contribution is zero", () => {
+    const result = computeSharesFromContributions([
+      { partnerId: "p1", contributionAmount: 0 },
+      { partnerId: "p2", contributionAmount: 0 },
+    ]);
+    expect(result.every((r) => r.sharePct === 0)).toBe(true);
+  });
+
+  it("gives a single partner 100% when they are the only contributor", () => {
+    const result = computeSharesFromContributions([{ partnerId: "p1", contributionAmount: 250000 }]);
+    expect(result[0].sharePct).toBe(100);
   });
 });
 
