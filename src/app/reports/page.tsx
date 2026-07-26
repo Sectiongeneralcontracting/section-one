@@ -88,6 +88,8 @@ export default function ReportsPage() {
   return (
     <AppShell
       title="التقارير"
+      hideTitle
+      hideBell
       action={
         <button onClick={() => window.print()} className="bg-primary text-white text-sm px-4 py-2 rounded-xl flex items-center gap-1.5 print:hidden">
           <Printer size={16} /> طباعة / حفظ PDF
@@ -109,14 +111,7 @@ export default function ReportsPage() {
       <div className="card space-y-6" id="report-content">
         <div className="flex items-center justify-between border-b pb-4">
           <p className="text-xs text-neutral-400">تاريخ التقرير: {new Date().toLocaleDateString("ar-EG")}</p>
-          <div className="flex items-center gap-3">
-            <div>
-              <p className="font-bold text-lg">{company?.name ?? "Section General Contracting"}</p>
-              <p className="text-xs text-neutral-500">{company?.address}</p>
-              <p className="text-xs text-neutral-500">{company?.phone} — {company?.email}</p>
-            </div>
-            <img src="/logo.png" alt="Section" className="h-12 w-auto object-contain" />
-          </div>
+          <img src="/logo.png" alt="Section" className="h-14 w-auto object-contain" />
         </div>
 
         {tab === "executive" && (
