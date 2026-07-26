@@ -20,6 +20,10 @@ export default function ReportsPage() {
   const [payroll, setPayroll] = useState<any[]>([]);
   const [contracts, setContracts] = useState<any[]>([]);
 
+  const [selectedPartnerId, setSelectedPartnerId] = useState("");
+  const [partnerReport, setPartnerReport] = useState<any>(null);
+  const [loadingPartnerReport, setLoadingPartnerReport] = useState(false);
+
   useEffect(() => {
     fetch("/api/company-profile").then((r) => r.json()).then(setCompany);
     fetch("/api/clients").then((r) => r.json()).then(setClients);
@@ -34,6 +38,18 @@ export default function ReportsPage() {
     fetch(`/api/payroll?month=${month}`).then((r) => r.json()).then(setPayroll);
     fetch("/api/contracts").then((r) => r.json()).then(setContracts);
   }, []);
+
+  useEffect(() => {
+    if (!selectedPartnerId) {
+      setPartnerReport(null);
+      return;
+    }
+    setLoadingPartnerReport(true);
+    fetch(`/api/partners/${selectedPartnerId}/report`)
+      .then((r) => r.json())
+      .then(setPartnerReport)
+      .finally(() => setLoadingPartnerReport(false));
+  }, [selectedPartnerId]);
 
   const tabs: { key: Tab; label: string }[] = [
     { key: "executive", label: "تقارير تنفيذية" },
@@ -151,11 +167,80 @@ export default function ReportsPage() {
         )}
 
         {tab === "partners" && (
-          <ReportTable
-            title="تقرير الشركاء"
-            headers={["الشريك", "النسبة الافتراضية", "إجمالي المساهمات"]}
-            rows={partners.map((p) => [p.name, `${Number(p.defaultShare)}%`, `${(p.contributions?.reduce((s: number, c: any) => s + Number(c.amount), 0) ?? 0).toLocaleString("ar-EG")} ج.م`])}
-          />
+          <div className="space-y-4">
+            <div className="print:hidden">
+              <label className="text-sm text-neutral-600 block mb-1">اختر شريك لعرض تفاصيل أرباحه لكل مشروع</label>
+              <select
+                value={selectedPartnerId}
+                onChange={(e) => setSelectedPartnerId(e.target.value)}
+                className="border rounded-xl px-3 py-2 text-sm w-full sm:w-72"
+              >
+                <option value="">كل الشركاء (ملخص عام)</option>
+                {partners.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+              </select>
+            </div>
+
+            {!selectedPartnerId && (
+              <ReportTable
+                title="تقرير الشركاء — ملخص عام"
+                headers={["الشريك", "النسبة الافتراضية", "إجمالي المساهمات"]}
+                rows={partners.map((p) => [p.name, `${Number(p.defaultShare)}%`, `${(p.contributions?.reduce((s: number, c: any) => s + Number(c.amount), 0) ?? 0).toLocaleString("ar-EG")} ج.م`])}
+              />
+            )}
+
+            {selectedPartnerId && loadingPartnerReport && (
+              <p className="text-sm text-neutral-400">جارٍ التحميل...</p>
+            )}
+
+            {selectedPartnerId && !loadingPartnerReport && partnerReport && (
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <ReportBlock title="إجمالي أرباح الشريك" value={`${partnerReport.totals.totalProfit.toLocaleString("ar-EG")} ج.م`} />
+                  <ReportBlock title="إجمالي مساهماته (مصروفاته) في المشاريع" value={`${partnerReport.totals.totalContribution.toLocaleString("ar-EG")} ج.م`} />
+                  <ReportBlock title="عدد المشاريع المشارك فيها" value={String(partnerReport.totals.projectsCount)} />
+                </div>
+                <div>
+                  <p className="font-semibold mb-2">تفاصيل الشريك: {partnerReport.partner.name}</p>
+                  <table className="w-full text-sm border">
+                    <thead className="bg-neutral-50">
+                      <tr>
+                        <th className="p-2 text-right border-b">المشروع</th>
+                        <th className="p-2 text-right border-b">العميل</th>
+                        <th className="p-2 text-right border-b">صافي ربح المشروع</th>
+                        <th className="p-2 text-right border-b">نسبة الشريك</th>
+                        <th className="p-2 text-right border-b">ربح الشريك</th>
+                        <th className="p-2 text-right border-b">مساهمته (مصروفه) في المشروع</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {partnerReport.rows.length === 0 && (
+                        <tr><td className="p-3 text-neutral-400" colSpan={6}>الشريك ده مش مشارك في أي مشروع لسه.</td></tr>
+                      )}
+                      {partnerReport.rows.map((r: any) => (
+                        <tr key={r.projectId} className="border-b">
+                          <td className="p-2">{r.projectName}</td>
+                          <td className="p-2">{r.clientName}</td>
+                          <td className="p-2">{r.netProfit.toLocaleString("ar-EG")} ج.م</td>
+                          <td className="p-2">{r.sharePct}%</td>
+                          <td className="p-2 font-semibold text-success">{r.partnerProfit.toLocaleString("ar-EG")} ج.م</td>
+                          <td className="p-2">{r.contributionAmount.toLocaleString("ar-EG")} ج.م</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                    {partnerReport.rows.length > 0 && (
+                      <tfoot>
+                        <tr className="bg-neutral-50 font-semibold">
+                          <td className="p-2" colSpan={4}>الإجمالي</td>
+                          <td className="p-2 text-success">{partnerReport.totals.totalProfit.toLocaleString("ar-EG")} ج.م</td>
+                          <td className="p-2">{partnerReport.totals.totalContribution.toLocaleString("ar-EG")} ج.م</td>
+                        </tr>
+                      </tfoot>
+                    )}
+                  </table>
+                </div>
+              </div>
+            )}
+          </div>
         )}
       </div>
     </AppShell>
