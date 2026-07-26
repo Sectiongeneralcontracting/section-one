@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
@@ -7,25 +8,32 @@ import { LayoutDashboard, Briefcase, Users, HandCoins, Settings, UserCog, FileBa
 import { cn } from "@/lib/utils";
 
 const items = [
-  { href: "/dashboard", label: "الرئيسية", icon: LayoutDashboard },
-  { href: "/projects", label: "المشاريع", icon: Briefcase },
-  { href: "/contracts", label: "العقود", icon: FileSignature },
-  { href: "/clients", label: "العملاء", icon: Users },
-  { href: "/partners", label: "الشركاء", icon: HandCoins },
-  { href: "/suppliers", label: "الموردون", icon: Truck },
-  { href: "/purchase-orders", label: "أوامر الشراء", icon: ShoppingCart },
-  { href: "/inventory", label: "المخازن", icon: Warehouse },
-  { href: "/equipment", label: "المعدات", icon: HardHat },
-  { href: "/employees", label: "الموظفون", icon: IdCard },
-  { href: "/attendance", label: "الحضور والانصراف", icon: CalendarCheck },
-  { href: "/payroll", label: "الرواتب", icon: Wallet },
-  { href: "/reports", label: "التقارير", icon: FileBarChart },
-  { href: "/users", label: "المستخدمون", icon: UserCog },
-  { href: "/settings", label: "الإعدادات", icon: Settings },
+  { href: "/dashboard", label: "الرئيسية", labelEn: "Dashboard", icon: LayoutDashboard },
+  { href: "/projects", label: "المشاريع", labelEn: "Projects", icon: Briefcase },
+  { href: "/contracts", label: "العقود", labelEn: "Contracts", icon: FileSignature },
+  { href: "/clients", label: "العملاء", labelEn: "Clients", icon: Users },
+  { href: "/partners", label: "الشركاء", labelEn: "Partners", icon: HandCoins },
+  { href: "/suppliers", label: "الموردون", labelEn: "Suppliers", icon: Truck },
+  { href: "/purchase-orders", label: "أوامر الشراء", labelEn: "Purchase Orders", icon: ShoppingCart },
+  { href: "/inventory", label: "المخازن", labelEn: "Inventory", icon: Warehouse },
+  { href: "/equipment", label: "المعدات", labelEn: "Equipment", icon: HardHat },
+  { href: "/employees", label: "الموظفون", labelEn: "Employees", icon: IdCard },
+  { href: "/attendance", label: "الحضور والانصراف", labelEn: "Attendance", icon: CalendarCheck },
+  { href: "/payroll", label: "الرواتب", labelEn: "Payroll", icon: Wallet },
+  { href: "/reports", label: "التقارير", labelEn: "Reports", icon: FileBarChart },
+  { href: "/users", label: "المستخدمون", labelEn: "Users", icon: UserCog },
+  { href: "/settings", label: "الإعدادات", labelEn: "Settings", icon: Settings },
 ];
 
 export function Sidebar() {
   const pathname = usePathname();
+  const [locale, setLocale] = useState<"ar" | "en">("ar");
+
+  useEffect(() => {
+    const match = document.cookie.match(/(?:^|; )locale=(ar|en)/);
+    setLocale((match?.[1] as "ar" | "en") ?? "ar");
+  }, []);
+
   return (
     <aside className="w-64 shrink-0 bg-steel-dark text-white min-h-screen p-4 hidden md:block">
       <div className="flex items-center gap-2 mb-1 px-2">
@@ -46,7 +54,7 @@ export function Sidebar() {
               )}
             >
               <item.icon size={18} />
-              {item.label}
+              {locale === "en" ? item.labelEn : item.label}
             </Link>
           );
         })}

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -7,9 +8,9 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
-  // اللغة الافتراضية عربي / RTL — تُقرأ لاحقًا من SystemSettings
+  const locale = cookies().get("locale")?.value === "en" ? "en" : "ar";
   return (
-    <html lang="ar" dir="rtl">
+    <html lang={locale} dir={locale === "ar" ? "rtl" : "ltr"}>
       <body>{children}</body>
     </html>
   );

@@ -1,5 +1,6 @@
 import { Sidebar } from "./sidebar";
 import { NotificationBell } from "@/components/notification-bell";
+import { UserMenu } from "@/components/user-menu";
 
 export function AppShell({
   title,
@@ -19,9 +20,17 @@ export function AppShell({
       <Sidebar />
       <main className="flex-1 p-6 space-y-5 min-h-screen">
         <div className="flex items-center justify-between">
-          {!hideTitle ? <h1 className="text-2xl font-bold text-neutral-900">{title}</h1> : <div />}
+          {!hideTitle ? (
+            <div className="flex items-center gap-3">
+              <img src="/logo.png" alt="Section" className="h-9 w-auto object-contain" />
+              <h1 className="text-2xl font-bold text-neutral-900">{title}</h1>
+            </div>
+          ) : (
+            <div />
+          )}
           <div className="flex items-center gap-3">
             {!hideBell && <NotificationBell />}
+            <UserMenu />
             {action}
           </div>
         </div>
