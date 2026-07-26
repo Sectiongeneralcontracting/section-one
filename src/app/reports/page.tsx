@@ -111,7 +111,7 @@ export default function ReportsPage() {
       <div className="card space-y-6" id="report-content">
         <div className="flex items-center justify-between border-b pb-4">
           <p className="text-xs text-neutral-400">تاريخ التقرير: {new Date().toLocaleDateString("ar-EG")}</p>
-          <img src="/logo.png" alt="Section" className="h-14 w-auto object-contain" />
+          <img src="/logo-report.png" alt="Section" className="h-14 w-auto object-contain" />
         </div>
 
         {tab === "executive" && (
@@ -202,12 +202,12 @@ export default function ReportsPage() {
                   <table className="w-full text-sm border">
                     <thead className="bg-neutral-50">
                       <tr>
+                        <th className="p-2 text-right border-b">مصروف الشريك في المشروع</th>
                         <th className="p-2 text-right border-b">المشروع</th>
                         <th className="p-2 text-right border-b">العميل</th>
                         <th className="p-2 text-right border-b">صافي ربح المشروع</th>
-                        <th className="p-2 text-right border-b">مساهمته (مصروفه) في المشروع</th>
                         <th className="p-2 text-right border-b">نسبة الشريك</th>
-                        <th className="p-2 text-right border-b">ربح الشريك</th>
+                        <th className="p-2 text-right border-b">قيمة ربحه</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -216,10 +216,10 @@ export default function ReportsPage() {
                       )}
                       {partnerReport.rows.map((r: any) => (
                         <tr key={r.projectId} className="border-b">
+                          <td className="p-2">{r.contributionAmount.toLocaleString("ar-EG")} ج.م</td>
                           <td className="p-2">{r.projectName}</td>
                           <td className="p-2">{r.clientName}</td>
                           <td className="p-2">{r.netProfit.toLocaleString("ar-EG")} ج.م</td>
-                          <td className="p-2">{r.contributionAmount.toLocaleString("ar-EG")} ج.م</td>
                           <td className="p-2">{r.sharePct}%</td>
                           <td className="p-2 font-semibold text-success">{r.partnerProfit.toLocaleString("ar-EG")} ج.م</td>
                         </tr>
@@ -228,8 +228,8 @@ export default function ReportsPage() {
                     {partnerReport.rows.length > 0 && (
                       <tfoot>
                         <tr className="bg-neutral-50 font-semibold">
-                          <td className="p-2" colSpan={3}>الإجمالي</td>
                           <td className="p-2">{partnerReport.totals.totalContribution.toLocaleString("ar-EG")} ج.م</td>
+                          <td className="p-2" colSpan={3}>الإجمالي</td>
                           <td className="p-2"></td>
                           <td className="p-2 text-success">{partnerReport.totals.totalProfit.toLocaleString("ar-EG")} ج.م</td>
                         </tr>
