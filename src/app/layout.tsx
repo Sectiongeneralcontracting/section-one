@@ -9,8 +9,9 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   const locale = cookies().get("locale")?.value === "en" ? "en" : "ar";
+  const theme = cookies().get("theme")?.value === "dark" ? "dark" : "light";
   return (
-    <html lang={locale} dir={locale === "ar" ? "rtl" : "ltr"}>
+    <html lang={locale} dir={locale === "ar" ? "rtl" : "ltr"} className={theme === "dark" ? "dark" : ""}>
       <body>{children}</body>
     </html>
   );

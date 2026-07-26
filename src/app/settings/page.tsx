@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { AppShell } from "@/components/layout/app-shell";
+import { Sun, Moon } from "lucide-react";
 
 export default function SettingsPage() {
+  const [tab, setTab] = useState<"general" | "appearance">("general");
   const [company, setCompany] = useState<any>(null);
   const [settings, setSettings] = useState<any>(null);
   const [savedMsg, setSavedMsg] = useState("");
@@ -11,11 +13,20 @@ export default function SettingsPage() {
   const [restoring, setRestoring] = useState(false);
   const [importing, setImporting] = useState(false);
   const [importResults, setImportResults] = useState<any>(null);
+  const [theme, setTheme] = useState<"light" | "dark">("light");
 
   useEffect(() => {
     fetch("/api/company-profile").then((r) => r.json()).then(setCompany);
     fetch("/api/settings").then((r) => r.json()).then(setSettings);
+    const match = document.cookie.match(/(?:^|; )theme=(light|dark)/);
+    setTheme((match?.[1] as "light" | "dark") ?? "light");
   }, []);
+
+  function applyTheme(next: "light" | "dark") {
+    document.cookie = `theme=${next}; path=/; max-age=31536000`;
+    setTheme(next);
+    window.location.reload();
+  }
 
   async function importContracts() {
     if (!confirm("تأكيد استيراد العقود العشرة (رايه فودز) دفعة واحدة؟ العملية آمنة وممكن تتكرر من غير تكرار البيانات.")) return;
@@ -107,6 +118,50 @@ export default function SettingsPage() {
 
   return (
     <AppShell title="الإعدادات">
+      <div className="flex gap-2">
+        <button
+          onClick={() => setTab("general")}
+          className={`text-sm px-4 py-2 rounded-xl ${tab === "general" ? "bg-primary text-white" : "border"}`}
+        >
+          عام
+        </button>
+        <button
+          onClick={() => setTab("appearance")}
+          className={`text-sm px-4 py-2 rounded-xl ${tab === "appearance" ? "bg-primary text-white" : "border"}`}
+        >
+          المظهر
+        </button>
+      </div>
+
+      {tab === "appearance" && (
+        <div className="card space-y-4">
+          <h2 className="font-semibold">لون النظام</h2>
+          <p className="text-sm text-neutral-500">اختر مظهر النظام: فاتح (أبيض) أو غامق (أسود) بألوان مريحة للعين.</p>
+          <div className="flex gap-4">
+            <button
+              onClick={() => applyTheme("light")}
+              className={`flex-1 flex flex-col items-center gap-2 p-5 rounded-2xl border-2 ${theme === "light" ? "border-primary" : "border-neutral-200"}`}
+            >
+              <div className="w-full h-16 rounded-lg bg-white border border-neutral-200 flex items-center justify-center">
+                <Sun size={22} className="text-warning" />
+              </div>
+              <span className="text-sm font-medium">فاتح (أبيض)</span>
+            </button>
+            <button
+              onClick={() => applyTheme("dark")}
+              className={`flex-1 flex flex-col items-center gap-2 p-5 rounded-2xl border-2 ${theme === "dark" ? "border-primary" : "border-neutral-200"}`}
+            >
+              <div className="w-full h-16 rounded-lg bg-neutral-900 border border-neutral-700 flex items-center justify-center">
+                <Moon size={22} className="text-neutral-200" />
+              </div>
+              <span className="text-sm font-medium">غامق (أسود)</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {tab === "general" && (
+      <>
       {savedMsg && <p className="text-success text-sm">{savedMsg}</p>}
       {error && <p className="text-danger text-sm">{error}</p>}
 
@@ -181,6 +236,8 @@ export default function SettingsPage() {
           </div>
         )}
       </div>
+      </>
+      )}
     </AppShell>
   );
 }

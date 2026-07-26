@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { AppShell } from "@/components/layout/app-shell";
 import { Plus, X, Pencil, Trash2 } from "lucide-react";
 
@@ -176,7 +177,9 @@ export default function ClientsPage() {
             )}
             {clients.map((c) => (
               <tr key={c.id} className="border-t">
-                <td className="p-3 font-medium">{c.name}</td>
+                <td className="p-3 font-medium">
+                  <Link href={`/clients/${c.id}`} className="text-primary hover:underline">{c.name}</Link>
+                </td>
                 <td className="p-3">{c.phone || "—"}</td>
                 <td className="p-3">{c.email || "—"}</td>
                 <td className="p-3">{c.projects.length}</td>

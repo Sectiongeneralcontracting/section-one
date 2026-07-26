@@ -3,6 +3,69 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { logAudit } from "@/lib/audit";
+
+export async function GET(_req: Request, { params }: { params: { id: string } }) {
+  const session = await getServerSession(authOptions);
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const client = await prisma.client.findUnique({
+    where: { id: params.id },
+    include: {
+      projects: {
+        include: {
+          expenses: true,
+          contract: { include: { certificates: true } },
+        },
+        orderBy: { createdAt: "desc" },
+      },
+    },
+  });
+  if (!client) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+  const projects = client.projects.map((p) => {
+    const totalExpenses = p.expenses.reduce((s, e) => s + Number(e.amount), 0);
+    const totalCollected = (p.contract?.certificates ?? [])
+      .filter((c) => c.status === "PAID")
+      .reduce((s, c) => s + Number(c.netPayable), 0);
+    const totalPending = (p.contract?.certificates ?? [])
+      .filter((c) => c.status !== "PAID")
+      .reduce((s, c) => s + Number(c.netPayable), 0);
+    const netProfit = Number(p.contractValue) - totalExpenses;
+    const cashFlow = totalCollected - totalExpenses;
+
+    return {
+      id: p.id,
+      code: p.code,
+      name: p.name,
+      status: p.status,
+      contractValue: Number(p.contractValue),
+      totalExpenses,
+      netProfit,
+      totalCollected,
+      totalPending,
+      cashFlow,
+      cashFlowStatus: cashFlow >= 0 ? "positive" : "negative",
+      hasContract: !!p.contract,
+    };
+  });
+
+  const totals = {
+    totalContractValue: projects.reduce((s, p) => s + p.contractValue, 0),
+    totalExpenses: projects.reduce((s, p) => s + p.totalExpenses, 0),
+    totalCollected: projects.reduce((s, p) => s + p.totalCollected, 0),
+    totalCashFlow: projects.reduce((s, p) => s + p.cashFlow, 0),
+  };
+
+  return NextResponse.json({
+    id: client.id,
+    name: client.name,
+    phone: client.phone,
+    email: client.email,
+    address: client.address,
+    projects,
+    totals,
+  });
+}
 import { clientSchema } from "@/lib/schemas";
 
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
