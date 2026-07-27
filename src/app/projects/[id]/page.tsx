@@ -32,6 +32,11 @@ const dict = {
     totalContributions: "إجمالي المساهمات", saveAllocations: "حفظ مساهمات الشركاء", errAllocations: "تعذر الحفظ",
     closingReportTitle: "تقرير الإغلاق", closedOn: "أُغلق بتاريخ", confirmClose: "تأكيد إغلاق المشروع وإنشاء تقرير الإغلاق؟",
     errClose: "تعذر الإغلاق", confirmReopen: "تأكيد إعادة فتح المشروع؟", errReopen: "تعذر إعادة الفتح",
+    clientPaymentsTitle: "مدفوعات العميل الفعلية", newPayment: "دفعة جديدة",
+    paymentAmount: "قيمة الدفعة *", paymentDate: "تاريخ الدفعة", paymentNotes: "ملاحظات",
+    savePayment: "حفظ الدفعة", errPayment: "تعذر تسجيل الدفعة", noPayments: "لا يوجد دفعات مسجلة بعد.",
+    thPaymentDate: "التاريخ", thPaymentAmount: "القيمة", thPaymentNotes: "ملاحظات",
+    totalClientPaid: "إجمالي المدفوع من العميل",
   },
   en: {
     loading: "Loading...", edit: "Edit", cancelEdit: "Cancel Edit",
@@ -48,6 +53,11 @@ const dict = {
     totalContributions: "Total Contributions", saveAllocations: "Save Partner Contributions", errAllocations: "Failed to save",
     closingReportTitle: "Closing Report", closedOn: "Closed on", confirmClose: "Confirm closing the project and generating the closing report?",
     errClose: "Failed to close", confirmReopen: "Confirm reopening the project?", errReopen: "Failed to reopen",
+    clientPaymentsTitle: "Actual Client Payments", newPayment: "New Payment",
+    paymentAmount: "Payment Amount *", paymentDate: "Payment Date", paymentNotes: "Notes",
+    savePayment: "Save Payment", errPayment: "Failed to record payment", noPayments: "No payments recorded yet.",
+    thPaymentDate: "Date", thPaymentAmount: "Amount", thPaymentNotes: "Notes",
+    totalClientPaid: "Total Paid by Client",
   },
 };
 
@@ -73,6 +83,11 @@ export default function ProjectDetailPage() {
   const [projectForm, setProjectForm] = useState({ name: "", contractValue: 0, description: "" });
   const [projectSaving, setProjectSaving] = useState(false);
   const [projectError, setProjectError] = useState("");
+
+  const [showPaymentForm, setShowPaymentForm] = useState(false);
+  const [paymentSaving, setPaymentSaving] = useState(false);
+  const [paymentError, setPaymentError] = useState("");
+  const [paymentForm, setPaymentForm] = useState({ amount: 0, date: "", notes: "" });
 
   async function load() {
     const res = await fetch(`/api/projects/${id}`);
@@ -130,6 +145,22 @@ export default function ProjectDetailPage() {
     load();
   }
 
+  async function addPayment(e: React.FormEvent) {
+    e.preventDefault();
+    setPaymentSaving(true);
+    setPaymentError("");
+    const res = await fetch(`/api/projects/${id}/client-payments`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(paymentForm),
+    });
+    setPaymentSaving(false);
+    if (!res.ok) return setPaymentError(t.errPayment);
+    setPaymentForm({ amount: 0, date: "", notes: "" });
+    setShowPaymentForm(false);
+    load();
+  }
+
   async function addExpense(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
@@ -173,6 +204,7 @@ export default function ProjectDetailPage() {
   }
 
   const totalExpenses = project.expenses.reduce((s: number, e: any) => s + Number(e.amount), 0);
+  const totalClientPaid = (project.clientPayments ?? []).reduce((s: number, p: any) => s + Number(p.amount), 0);
   const netProfit = Number(project.contractValue) - totalExpenses;
 
   return (
@@ -200,10 +232,11 @@ export default function ProjectDetailPage() {
         </div>
       }
     >
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         <div className="card"><p className="text-sm text-neutral-500">{t.client}</p><p className="font-bold">{project.client.name}</p></div>
         <div className="card"><p className="text-sm text-neutral-500">{t.value}</p><p className="font-bold">{Number(project.contractValue).toLocaleString(localeCode)} {currency}</p></div>
         <div className="card"><p className="text-sm text-neutral-500">{t.totalExpenses}</p><p className="font-bold text-danger">{totalExpenses.toLocaleString(localeCode)} {currency}</p></div>
+        <div className="card"><p className="text-sm text-neutral-500">{t.totalClientPaid}</p><p className="font-bold text-success">{totalClientPaid.toLocaleString(localeCode)} {currency}</p></div>
         <div className="card"><p className="text-sm text-neutral-500">{t.netProfit}</p><p className="font-bold text-success">{netProfit.toLocaleString(localeCode)} {currency}</p></div>
       </div>
 
@@ -293,6 +326,71 @@ export default function ProjectDetailPage() {
               </tr>
             ))}
           </tbody>
+        </table>
+      </div>
+
+      <div className="flex items-center justify-between">
+        <h2 className="font-semibold">{t.clientPaymentsTitle}</h2>
+        {project.status !== "CLOSED" && (
+          <button onClick={() => setShowPaymentForm((v) => !v)} className="bg-primary text-white text-sm px-3 py-1.5 rounded-xl flex items-center gap-1.5">
+            {showPaymentForm ? <X size={14} /> : <Plus size={14} />} {t.newPayment}
+          </button>
+        )}
+      </div>
+
+      {showPaymentForm && (
+        <form onSubmit={addPayment} className="card grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div>
+            <label className="text-sm text-neutral-600 block mb-1">{t.paymentAmount}</label>
+            <input required type="number" step="0.01" value={paymentForm.amount} onChange={(e) => setPaymentForm({ ...paymentForm, amount: Number(e.target.value) })} className="w-full border rounded-xl px-3 py-2" />
+          </div>
+          <div>
+            <label className="text-sm text-neutral-600 block mb-1">{t.paymentDate}</label>
+            <input type="date" value={paymentForm.date} onChange={(e) => setPaymentForm({ ...paymentForm, date: e.target.value })} className="w-full border rounded-xl px-3 py-2" />
+          </div>
+          <div>
+            <label className="text-sm text-neutral-600 block mb-1">{t.paymentNotes}</label>
+            <input value={paymentForm.notes} onChange={(e) => setPaymentForm({ ...paymentForm, notes: e.target.value })} className="w-full border rounded-xl px-3 py-2" />
+          </div>
+          {paymentError && <p className="text-danger text-sm sm:col-span-3">{paymentError}</p>}
+          <div className="sm:col-span-3">
+            <button disabled={paymentSaving} className="bg-primary text-white rounded-xl px-5 py-2 text-sm font-medium disabled:opacity-60">
+              {paymentSaving ? t.saving : t.savePayment}
+            </button>
+          </div>
+        </form>
+      )}
+
+      <div className="card !p-0 overflow-hidden">
+        <table className="w-full text-sm">
+          <thead className="bg-neutral-50 text-neutral-500">
+            <tr className="text-right">
+              <th className="p-3 font-medium">{t.thPaymentDate}</th>
+              <th className="p-3 font-medium">{t.thPaymentAmount}</th>
+              <th className="p-3 font-medium">{t.thPaymentNotes}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {(project.clientPayments ?? []).length === 0 && (
+              <tr><td className="p-4 text-neutral-400" colSpan={3}>{t.noPayments}</td></tr>
+            )}
+            {(project.clientPayments ?? []).map((p: any) => (
+              <tr key={p.id} className="border-t">
+                <td className="p-3">{new Date(p.date).toLocaleDateString(localeCode)}</td>
+                <td className="p-3 font-semibold text-success">{Number(p.amount).toLocaleString(localeCode)} {currency}</td>
+                <td className="p-3">{p.notes || "—"}</td>
+              </tr>
+            ))}
+          </tbody>
+          {(project.clientPayments ?? []).length > 0 && (
+            <tfoot>
+              <tr className="border-t bg-neutral-50 font-semibold">
+                <td className="p-3">{t.totalClientPaid}</td>
+                <td className="p-3 text-success">{totalClientPaid.toLocaleString(localeCode)} {currency}</td>
+                <td className="p-3"></td>
+              </tr>
+            </tfoot>
+          )}
         </table>
       </div>
 

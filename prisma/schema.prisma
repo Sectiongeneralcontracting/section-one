@@ -127,6 +127,7 @@ model Project {
   purchaseOrders       PurchaseOrder[]
   stockMovements       StockMovement[]
   equipmentAssignments EquipmentAssignment[]
+  clientPayments       ClientPayment[]
 
   @@map("projects")
 }
@@ -200,6 +201,20 @@ model PartnerContribution {
   createdAt   DateTime @default(now())
 
   @@map("partner_contributions")
+}
+
+// المدفوعات الفعلية اللي وصلت من العميل لكل مشروع (إدخال يدوي، منفصل عن حسابات المستخلصات)
+model ClientPayment {
+  id        String   @id @default(cuid())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id])
+  amount    Decimal  @db.Decimal(18, 2)
+  date      DateTime @default(now())
+  notes     String?
+  createdById String?
+  createdAt DateTime @default(now())
+
+  @@map("client_payments")
 }
 
 model ClosingReport {

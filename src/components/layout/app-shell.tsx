@@ -21,10 +21,7 @@ export function AppShell({
       <main className="flex-1 p-6 space-y-5 min-h-screen">
         <div className="flex items-center justify-between">
           {!hideTitle ? (
-            <div className="flex items-center gap-3">
-              <img src="/logo.png" alt="Section" className="h-9 w-auto object-contain" />
-              <h1 className="text-2xl font-bold text-neutral-900">{title}</h1>
-            </div>
+            <h1 className="text-2xl font-bold text-neutral-900">{title}</h1>
           ) : (
             <div />
           )}

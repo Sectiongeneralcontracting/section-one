@@ -15,6 +15,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
       expenses: { orderBy: { date: "desc" } },
       partnerAllocations: { include: { partner: true } },
       closingReports: true,
+      clientPayments: { orderBy: { date: "desc" } },
     },
   });
   if (!project) return NextResponse.json({ error: "Not found" }, { status: 404 });

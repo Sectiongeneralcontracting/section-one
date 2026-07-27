@@ -13,6 +13,7 @@ const dict = {
     loading: "جارٍ التحميل...", phone: "الهاتف", email: "البريد", address: "العنوان",
     totalValue: "إجمالي قيمة المشاريع", totalExpenses: "إجمالي المصروفات",
     totalCollected: "إجمالي المحصّل (مستخلصات مصروفة)", netCashFlow: "صافي التدفق النقدي",
+    totalClientPaid: "إجمالي المدفوع فعليًا من العميل", thClientPaid: "المدفوع فعليًا",
     thProject: "المشروع", thValue: "قيمة المشروع", thExpenses: "المصروفات",
     thCollected: "المحصّل (مصروف من المستخلصات)", thPending: "معلّق التحصيل",
     thCashFlow: "حالة التدفق النقدي", thStatus: "حالة المشروع",
@@ -23,6 +24,7 @@ const dict = {
     loading: "Loading...", phone: "Phone", email: "Email", address: "Address",
     totalValue: "Total Project Value", totalExpenses: "Total Expenses",
     totalCollected: "Total Collected (paid certificates)", netCashFlow: "Net Cash Flow",
+    totalClientPaid: "Total Actually Paid by Client", thClientPaid: "Actually Paid",
     thProject: "Project", thValue: "Project Value", thExpenses: "Expenses",
     thCollected: "Collected (from certificates)", thPending: "Pending Collection",
     thCashFlow: "Cash Flow Status", thStatus: "Project Status",
@@ -55,10 +57,11 @@ export default function ClientDetailPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         <div className="card"><p className="text-sm text-neutral-500">{t.totalValue}</p><p className="font-bold text-lg">{client.totals.totalContractValue.toLocaleString(localeCode)} {currency}</p></div>
         <div className="card"><p className="text-sm text-neutral-500">{t.totalExpenses}</p><p className="font-bold text-lg text-danger">{client.totals.totalExpenses.toLocaleString(localeCode)} {currency}</p></div>
         <div className="card"><p className="text-sm text-neutral-500">{t.totalCollected}</p><p className="font-bold text-lg text-success">{client.totals.totalCollected.toLocaleString(localeCode)} {currency}</p></div>
+        <div className="card"><p className="text-sm text-neutral-500">{t.totalClientPaid}</p><p className="font-bold text-lg text-success">{client.totals.totalClientPaid.toLocaleString(localeCode)} {currency}</p></div>
         <div className="card">
           <p className="text-sm text-neutral-500">{t.netCashFlow}</p>
           <p className={`font-bold text-lg ${client.totals.totalCashFlow >= 0 ? "text-success" : "text-danger"}`}>
@@ -75,6 +78,7 @@ export default function ClientDetailPage() {
               <th className="p-3 font-medium">{t.thValue}</th>
               <th className="p-3 font-medium">{t.thExpenses}</th>
               <th className="p-3 font-medium">{t.thCollected}</th>
+              <th className="p-3 font-medium">{t.thClientPaid}</th>
               <th className="p-3 font-medium">{t.thPending}</th>
               <th className="p-3 font-medium">{t.thCashFlow}</th>
               <th className="p-3 font-medium">{t.thStatus}</th>
@@ -82,7 +86,7 @@ export default function ClientDetailPage() {
           </thead>
           <tbody>
             {client.projects.length === 0 && (
-              <tr><td className="p-4 text-neutral-400" colSpan={7}>{t.noProjects}</td></tr>
+              <tr><td className="p-4 text-neutral-400" colSpan={8}>{t.noProjects}</td></tr>
             )}
             {client.projects.map((p: any) => (
               <tr key={p.id} className="border-t hover:bg-neutral-50">
@@ -93,6 +97,7 @@ export default function ClientDetailPage() {
                 <td className="p-3">{p.contractValue.toLocaleString(localeCode)} {currency}</td>
                 <td className="p-3">{p.totalExpenses.toLocaleString(localeCode)} {currency}</td>
                 <td className="p-3">{p.totalCollected.toLocaleString(localeCode)} {currency}</td>
+                <td className="p-3 font-medium">{p.totalClientPaid.toLocaleString(localeCode)} {currency}</td>
                 <td className="p-3">
                   {p.hasContract ? `${p.totalPending.toLocaleString(localeCode)} ${currency}` : <span className="text-neutral-400">{t.noContract}</span>}
                 </td>

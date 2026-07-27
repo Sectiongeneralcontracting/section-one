@@ -15,6 +15,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
         include: {
           expenses: true,
           contract: { include: { certificates: true } },
+          clientPayments: true,
         },
         orderBy: { createdAt: "desc" },
       },
@@ -30,8 +31,9 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
     const totalPending = (p.contract?.certificates ?? [])
       .filter((c) => c.status !== "PAID")
       .reduce((s, c) => s + Number(c.netPayable), 0);
+    const totalClientPaid = p.clientPayments.reduce((s, cp) => s + Number(cp.amount), 0);
     const netProfit = Number(p.contractValue) - totalExpenses;
-    const cashFlow = totalCollected - totalExpenses;
+    const cashFlow = totalClientPaid - totalExpenses;
 
     return {
       id: p.id,
@@ -43,6 +45,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
       netProfit,
       totalCollected,
       totalPending,
+      totalClientPaid,
       cashFlow,
       cashFlowStatus: cashFlow >= 0 ? "positive" : "negative",
       hasContract: !!p.contract,
@@ -53,6 +56,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
     totalContractValue: projects.reduce((s, p) => s + p.contractValue, 0),
     totalExpenses: projects.reduce((s, p) => s + p.totalExpenses, 0),
     totalCollected: projects.reduce((s, p) => s + p.totalCollected, 0),
+    totalClientPaid: projects.reduce((s, p) => s + p.totalClientPaid, 0),
     totalCashFlow: projects.reduce((s, p) => s + p.cashFlow, 0),
   };
 

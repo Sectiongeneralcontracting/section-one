@@ -10,6 +10,7 @@ import { useLocale } from "@/lib/use-locale";
 import { Plus, X, Coins, TrendingDown, TrendingUp, Briefcase, TrendingUp as CashUp, TrendingDown as CashDown } from "lucide-react";
 
 type Certificate = { status: string; netPayable: string };
+type ClientPayment = { amount: string };
 type Project = {
   id: string;
   code: string;
@@ -19,6 +20,7 @@ type Project = {
   client: { name: string };
   expenses: { amount: string; category: string }[];
   contract: { certificates: Certificate[] } | null;
+  clientPayments: ClientPayment[];
 };
 type Client = { id: string; name: string };
 
@@ -62,6 +64,7 @@ const dict = {
     thExpenses: "المصروفات",
     thProfit: "الربح",
     thCollected: "المحصّل (مستخلصات مصروفة)",
+    thClientPaid: "المدفوع من العميل",
     thCashFlow: "التدفق النقدي",
     thStatus: "الحالة",
     loading: "جارٍ التحميل...",
@@ -99,6 +102,7 @@ const dict = {
     thExpenses: "Expenses",
     thProfit: "Profit",
     thCollected: "Collected (paid certificates)",
+    thClientPaid: "Paid by Client",
     thCashFlow: "Cash Flow",
     thStatus: "Status",
     loading: "Loading...",
@@ -172,8 +176,9 @@ export default function ProjectsPage() {
       const totalCollected = (p.contract?.certificates ?? [])
         .filter((c) => c.status === "PAID")
         .reduce((s, c) => s + Number(c.netPayable), 0);
-      const cashFlow = totalCollected - totalExpenses;
-      return { ...p, totalExpenses, netProfit, totalCollected, cashFlow };
+      const totalClientPaid = p.clientPayments.reduce((s, cp) => s + Number(cp.amount), 0);
+      const cashFlow = totalClientPaid - totalExpenses;
+      return { ...p, totalExpenses, netProfit, totalCollected, totalClientPaid, cashFlow };
     });
   }, [filteredProjects]);
 
@@ -298,14 +303,15 @@ export default function ProjectsPage() {
               <th className="p-3 font-medium">{t.thExpenses}</th>
               <th className="p-3 font-medium">{t.thProfit}</th>
               <th className="p-3 font-medium">{t.thCollected}</th>
+              <th className="p-3 font-medium">{t.thClientPaid}</th>
               <th className="p-3 font-medium">{t.thCashFlow}</th>
               <th className="p-3 font-medium">{t.thStatus}</th>
             </tr>
           </thead>
           <tbody>
-            {loading && <tr><td className="p-4 text-neutral-400" colSpan={9}>{t.loading}</td></tr>}
+            {loading && <tr><td className="p-4 text-neutral-400" colSpan={10}>{t.loading}</td></tr>}
             {!loading && rows.length === 0 && (
-              <tr><td className="p-4 text-neutral-400" colSpan={9}>{t.noMatch}</td></tr>
+              <tr><td className="p-4 text-neutral-400" colSpan={10}>{t.noMatch}</td></tr>
             )}
             {rows.map((p) => (
               <tr key={p.id} className="border-t hover:bg-neutral-50">
@@ -320,6 +326,7 @@ export default function ProjectsPage() {
                 <td className="p-3 text-danger">{p.totalExpenses.toLocaleString(locale === "ar" ? "ar-EG" : "en-US")}</td>
                 <td className={`p-3 font-medium ${p.netProfit >= 0 ? "text-success" : "text-danger"}`}>{p.netProfit.toLocaleString(locale === "ar" ? "ar-EG" : "en-US")}</td>
                 <td className="p-3">{p.totalCollected.toLocaleString(locale === "ar" ? "ar-EG" : "en-US")}</td>
+                <td className="p-3 font-medium">{p.totalClientPaid.toLocaleString(locale === "ar" ? "ar-EG" : "en-US")}</td>
                 <td className="p-3">
                   <span className={`text-xs px-2.5 py-1 rounded-full font-medium flex items-center gap-1 w-fit ${p.cashFlow >= 0 ? "bg-success/10 text-success" : "bg-danger/10 text-danger"}`}>
                     {p.cashFlow >= 0 ? <CashUp size={12} /> : <CashDown size={12} />}
@@ -338,6 +345,7 @@ export default function ProjectsPage() {
                 <td className="p-3 text-danger">{rows.reduce((s, p) => s + p.totalExpenses, 0).toLocaleString(locale === "ar" ? "ar-EG" : "en-US")}</td>
                 <td className="p-3 text-success">{rows.reduce((s, p) => s + p.netProfit, 0).toLocaleString(locale === "ar" ? "ar-EG" : "en-US")}</td>
                 <td className="p-3">{rows.reduce((s, p) => s + p.totalCollected, 0).toLocaleString(locale === "ar" ? "ar-EG" : "en-US")}</td>
+                <td className="p-3">{rows.reduce((s, p) => s + p.totalClientPaid, 0).toLocaleString(locale === "ar" ? "ar-EG" : "en-US")}</td>
                 <td className="p-3">{rows.reduce((s, p) => s + p.cashFlow, 0).toLocaleString(locale === "ar" ? "ar-EG" : "en-US")}</td>
                 <td className="p-3"></td>
               </tr>
