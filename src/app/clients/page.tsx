@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { AppShell } from "@/components/layout/app-shell";
 import { Plus, X, Pencil, Trash2 } from "lucide-react";
@@ -12,8 +12,16 @@ type Client = {
   email?: string;
   address?: string;
   notes?: string;
-  projects: { contractValue: string }[];
+  projects: { contractValue: string; status: string }[];
 };
+
+const statusOptions = [
+  { value: "", label: "كل الحالات" },
+  { value: "ONGOING", label: "جارية" },
+  { value: "READY_TO_CLOSE", label: "جاهزة للإغلاق" },
+  { value: "CLOSED", label: "مغلقة" },
+  { value: "DELAYED", label: "متأخرة" },
+];
 
 export default function ClientsPage() {
   const [clients, setClients] = useState<Client[]>([]);
@@ -23,6 +31,8 @@ export default function ClientsPage() {
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({ name: "", phone: "", email: "", address: "", notes: "" });
   const [error, setError] = useState("");
+  const [searchName, setSearchName] = useState("");
+  const [filterStatus, setFilterStatus] = useState("");
 
   async function load() {
     setLoading(true);
@@ -73,6 +83,14 @@ export default function ClientsPage() {
     if (!res.ok) return alert((await res.json()).error ?? "تعذر الحذف");
     load();
   }
+
+  const filteredClients = useMemo(() => {
+    return clients.filter((c) => {
+      const matchesName = searchName.trim() === "" || c.name.toLowerCase().includes(searchName.trim().toLowerCase());
+      const matchesStatus = filterStatus === "" || c.projects.some((p) => p.status === filterStatus);
+      return matchesName && matchesStatus;
+    });
+  }, [clients, searchName, filterStatus]);
 
   return (
     <AppShell
@@ -156,6 +174,24 @@ export default function ClientsPage() {
         </form>
       )}
 
+      <div className="card flex flex-col sm:flex-row gap-3 sm:items-end">
+        <div className="flex-1">
+          <label className="text-sm text-neutral-600 block mb-1">فلترة باسم العميل</label>
+          <input
+            value={searchName}
+            onChange={(e) => setSearchName(e.target.value)}
+            placeholder="اكتب اسم العميل..."
+            className="w-full border rounded-xl px-3 py-2"
+          />
+        </div>
+        <div className="sm:w-56">
+          <label className="text-sm text-neutral-600 block mb-1">فلترة بحالة مشاريع العميل</label>
+          <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className="w-full border rounded-xl px-3 py-2">
+            {statusOptions.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+          </select>
+        </div>
+      </div>
+
       <div className="card !p-0 overflow-hidden">
         <table className="w-full text-sm">
           <thead className="bg-neutral-50 text-neutral-500">
@@ -172,10 +208,10 @@ export default function ClientsPage() {
             {loading && (
               <tr><td className="p-4 text-neutral-400" colSpan={6}>جارٍ التحميل...</td></tr>
             )}
-            {!loading && clients.length === 0 && (
-              <tr><td className="p-4 text-neutral-400" colSpan={6}>لا يوجد عملاء بعد — ابدأ بإضافة أول عميل.</td></tr>
+            {!loading && filteredClients.length === 0 && (
+              <tr><td className="p-4 text-neutral-400" colSpan={6}>لا يوجد عملاء مطابقين.</td></tr>
             )}
-            {clients.map((c) => (
+            {filteredClients.map((c) => (
               <tr key={c.id} className="border-t">
                 <td className="p-3 font-medium">
                   <Link href={`/clients/${c.id}`} className="text-primary hover:underline">{c.name}</Link>
