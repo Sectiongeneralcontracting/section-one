@@ -1,5 +1,6 @@
 "use client";
 
+import { useLocale } from "@/lib/use-locale";
 import {
   ResponsiveContainer,
   BarChart,
@@ -15,9 +16,10 @@ import {
 const COLORS = ["#C9692E", "#565B60", "#2E7D32", "#E08A4F", "#9A4E20", "#25282B"];
 
 export function MonthlyProfitChart({ data }: { data: { month: string; profit: number }[] }) {
+  const locale = useLocale();
   return (
     <div className="card">
-      <p className="font-semibold mb-4">الأرباح الشهرية</p>
+      <p className="font-semibold mb-4">{locale === "ar" ? "الأرباح الشهرية" : "Monthly Profit"}</p>
       <ResponsiveContainer width="100%" height={220}>
         <BarChart data={data}>
           <XAxis dataKey="month" tick={{ fontSize: 12 }} />
@@ -31,9 +33,10 @@ export function MonthlyProfitChart({ data }: { data: { month: string; profit: nu
 }
 
 export function ExpensesByCategoryChart({ data }: { data: { name: string; value: number }[] }) {
+  const locale = useLocale();
   return (
     <div className="card">
-      <p className="font-semibold mb-4">المصروفات حسب البند</p>
+      <p className="font-semibold mb-4">{locale === "ar" ? "المصروفات حسب البند" : "Expenses by Category"}</p>
       <ResponsiveContainer width="100%" height={220}>
         <PieChart>
           <Pie data={data} dataKey="value" nameKey="name" innerRadius={45} outerRadius={80}>
@@ -47,9 +50,10 @@ export function ExpensesByCategoryChart({ data }: { data: { name: string; value:
 }
 
 export function PartnerDistributionBars({ data }: { data: { name: string; pct: number }[] }) {
+  const locale = useLocale();
   return (
     <div className="card">
-      <p className="font-semibold mb-4">توزيع الأرباح بين الشركاء</p>
+      <p className="font-semibold mb-4">{locale === "ar" ? "توزيع الأرباح بين الشركاء" : "Profit Distribution Among Partners"}</p>
       <div className="space-y-3">
         {data.length === 0 && <p className="text-sm text-neutral-400">لا يوجد شركاء بعد.</p>}
         {data.map((p, i) => (

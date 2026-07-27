@@ -6,6 +6,7 @@ import { AppShell } from "@/components/layout/app-shell";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { KpiCard } from "@/components/kpi-card";
 import { ExpensesByCategoryChart } from "@/components/dashboard-charts";
+import { useLocale } from "@/lib/use-locale";
 import { Plus, X, Coins, TrendingDown, TrendingUp, Briefcase, TrendingUp as CashUp, TrendingDown as CashDown } from "lucide-react";
 
 type Certificate = { status: string; netPayable: string };
@@ -21,24 +22,95 @@ type Project = {
 };
 type Client = { id: string; name: string };
 
-const categoryLabels: Record<string, string> = {
-  MATERIALS: "مواد",
-  LABOR: "عمالة",
-  SUBCONTRACTOR: "مقاولي باطن",
-  EQUIPMENT: "معدات",
-  ADMINISTRATIVE: "مصروفات إدارية",
-  OTHER: "أخرى",
+const categoryLabels: Record<string, { ar: string; en: string }> = {
+  MATERIALS: { ar: "مواد", en: "Materials" },
+  LABOR: { ar: "عمالة", en: "Labor" },
+  SUBCONTRACTOR: { ar: "مقاولي باطن", en: "Subcontractors" },
+  EQUIPMENT: { ar: "معدات", en: "Equipment" },
+  ADMINISTRATIVE: { ar: "مصروفات إدارية", en: "Administrative" },
+  OTHER: { ar: "أخرى", en: "Other" },
 };
 
-const statusOptions = [
-  { value: "", label: "كل الحالات" },
-  { value: "ONGOING", label: "جارية" },
-  { value: "READY_TO_CLOSE", label: "جاهزة للإغلاق" },
-  { value: "CLOSED", label: "مغلقة" },
-  { value: "DELAYED", label: "متأخرة" },
-];
+const dict = {
+  ar: {
+    title: "المشاريع",
+    newProject: "مشروع جديد",
+    cancel: "إلغاء",
+    code: "كود المشروع *",
+    name: "اسم المشروع *",
+    client: "العميل *",
+    chooseClient: "اختر العميل",
+    value: "قيمة العقد *",
+    startDate: "تاريخ البدء *",
+    status: "الحالة",
+    save: "حفظ المشروع",
+    saving: "جارٍ الحفظ...",
+    err: "تعذر حفظ المشروع — تأكد من البيانات",
+    kpiValue: "إجمالي قيمة العقود (المفلترة)",
+    kpiExpenses: "إجمالي المصروفات",
+    kpiProfit: "إجمالي الأرباح",
+    kpiCount: "عدد المشاريع",
+    filterClient: "فلترة باسم العميل",
+    filterClientPh: "اكتب اسم العميل...",
+    filterStatus: "فلترة بحالة المشروع",
+    allStatuses: "كل الحالات",
+    tableTitle: "جدول المشاريع والتدفق النقدي",
+    thCode: "كود المشروع",
+    thName: "اسم المشروع",
+    thClient: "العميل",
+    thValue: "قيمة العقد",
+    thExpenses: "المصروفات",
+    thProfit: "الربح",
+    thCollected: "المحصّل (مستخلصات مصروفة)",
+    thCashFlow: "التدفق النقدي",
+    thStatus: "الحالة",
+    loading: "جارٍ التحميل...",
+    noMatch: "لا يوجد مشاريع مطابقة.",
+    total: "الإجمالي",
+    statuses: { ONGOING: "جارية", READY_TO_CLOSE: "جاهزة للإغلاق", CLOSED: "مغلقة", DELAYED: "متأخرة" },
+  },
+  en: {
+    title: "Projects",
+    newProject: "New Project",
+    cancel: "Cancel",
+    code: "Project Code *",
+    name: "Project Name *",
+    client: "Client *",
+    chooseClient: "Choose client",
+    value: "Contract Value *",
+    startDate: "Start Date *",
+    status: "Status",
+    save: "Save Project",
+    saving: "Saving...",
+    err: "Failed to save project — check the data",
+    kpiValue: "Total Contract Value (filtered)",
+    kpiExpenses: "Total Expenses",
+    kpiProfit: "Total Profit",
+    kpiCount: "Projects Count",
+    filterClient: "Filter by client name",
+    filterClientPh: "Type client name...",
+    filterStatus: "Filter by project status",
+    allStatuses: "All statuses",
+    tableTitle: "Projects & Cash Flow Table",
+    thCode: "Code",
+    thName: "Project Name",
+    thClient: "Client",
+    thValue: "Contract Value",
+    thExpenses: "Expenses",
+    thProfit: "Profit",
+    thCollected: "Collected (paid certificates)",
+    thCashFlow: "Cash Flow",
+    thStatus: "Status",
+    loading: "Loading...",
+    noMatch: "No matching projects.",
+    total: "Total",
+    statuses: { ONGOING: "Ongoing", READY_TO_CLOSE: "Ready to Close", CLOSED: "Closed", DELAYED: "Delayed" },
+  },
+};
 
 export default function ProjectsPage() {
+  const locale = useLocale();
+  const t = dict[locale];
   const [projects, setProjects] = useState<Project[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
@@ -79,7 +151,7 @@ export default function ProjectsPage() {
       body: JSON.stringify({ ...form, contractValue: Number(form.contractValue) }),
     });
     setSaving(false);
-    if (!res.ok) return setError("تعذر حفظ المشروع — تأكد من البيانات");
+    if (!res.ok) return setError(t.err);
     setForm({ code: "", name: "", clientId: "", contractValue: 0, startDate: "", status: "ONGOING" });
     setShowForm(false);
     load();
@@ -118,86 +190,94 @@ export default function ProjectsPage() {
         byCat[e.category] = (byCat[e.category] ?? 0) + Number(e.amount);
       }
     }
-    return Object.entries(byCat).map(([k, v]) => ({ name: categoryLabels[k] ?? k, value: v }));
-  }, [filteredProjects]);
+    return Object.entries(byCat).map(([k, v]) => ({ name: categoryLabels[k]?.[locale] ?? k, value: v }));
+  }, [filteredProjects, locale]);
+
+  const statusOptions = [
+    { value: "", label: t.allStatuses },
+    { value: "ONGOING", label: t.statuses.ONGOING },
+    { value: "READY_TO_CLOSE", label: t.statuses.READY_TO_CLOSE },
+    { value: "CLOSED", label: t.statuses.CLOSED },
+    { value: "DELAYED", label: t.statuses.DELAYED },
+  ];
 
   return (
     <AppShell
-      title="المشاريع"
+      title={t.title}
       action={
         <button
           onClick={() => setShowForm((v) => !v)}
           className="bg-primary text-white text-sm px-4 py-2 rounded-xl flex items-center gap-1.5"
         >
           {showForm ? <X size={16} /> : <Plus size={16} />}
-          {showForm ? "إلغاء" : "مشروع جديد"}
+          {showForm ? t.cancel : t.newProject}
         </button>
       }
     >
       {showForm && (
         <form onSubmit={handleSubmit} className="card grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <div>
-            <label className="text-sm text-neutral-600 block mb-1">كود المشروع *</label>
+            <label className="text-sm text-neutral-600 block mb-1">{t.code}</label>
             <input required value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} className="w-full border rounded-xl px-3 py-2" placeholder="PRJ-005" />
           </div>
           <div>
-            <label className="text-sm text-neutral-600 block mb-1">اسم المشروع *</label>
+            <label className="text-sm text-neutral-600 block mb-1">{t.name}</label>
             <input required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="w-full border rounded-xl px-3 py-2" />
           </div>
           <div>
-            <label className="text-sm text-neutral-600 block mb-1">العميل *</label>
+            <label className="text-sm text-neutral-600 block mb-1">{t.client}</label>
             <select required value={form.clientId} onChange={(e) => setForm({ ...form, clientId: e.target.value })} className="w-full border rounded-xl px-3 py-2">
-              <option value="">اختر العميل</option>
+              <option value="">{t.chooseClient}</option>
               {clients.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
           </div>
           <div>
-            <label className="text-sm text-neutral-600 block mb-1">قيمة العقد *</label>
+            <label className="text-sm text-neutral-600 block mb-1">{t.value}</label>
             <input required type="number" step="0.01" value={form.contractValue} onChange={(e) => setForm({ ...form, contractValue: Number(e.target.value) })} className="w-full border rounded-xl px-3 py-2" />
           </div>
           <div>
-            <label className="text-sm text-neutral-600 block mb-1">تاريخ البدء *</label>
+            <label className="text-sm text-neutral-600 block mb-1">{t.startDate}</label>
             <input required type="date" value={form.startDate} onChange={(e) => setForm({ ...form, startDate: e.target.value })} className="w-full border rounded-xl px-3 py-2" />
           </div>
           <div>
-            <label className="text-sm text-neutral-600 block mb-1">الحالة</label>
+            <label className="text-sm text-neutral-600 block mb-1">{t.status}</label>
             <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })} className="w-full border rounded-xl px-3 py-2">
-              <option value="ONGOING">جارية</option>
-              <option value="READY_TO_CLOSE">جاهزة للإغلاق</option>
-              <option value="CLOSED">مغلقة</option>
-              <option value="DELAYED">متأخرة</option>
+              <option value="ONGOING">{t.statuses.ONGOING}</option>
+              <option value="READY_TO_CLOSE">{t.statuses.READY_TO_CLOSE}</option>
+              <option value="CLOSED">{t.statuses.CLOSED}</option>
+              <option value="DELAYED">{t.statuses.DELAYED}</option>
             </select>
           </div>
           {error && <p className="text-danger text-sm lg:col-span-3">{error}</p>}
           <div className="lg:col-span-3">
             <button disabled={saving} className="bg-primary text-white rounded-xl px-5 py-2 text-sm font-medium disabled:opacity-60">
-              {saving ? "جارٍ الحفظ..." : "حفظ المشروع"}
+              {saving ? t.saving : t.save}
             </button>
           </div>
         </form>
       )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <KpiCard label="إجمالي قيمة العقود (المفلترة)" value={`${kpis.totalContracts.toLocaleString("ar-EG")} ج.م`} icon={Coins} tone="primary" />
-        <KpiCard label="إجمالي المصروفات" value={`${kpis.totalExpenses.toLocaleString("ar-EG")} ج.م`} icon={TrendingDown} tone="danger" />
-        <KpiCard label="إجمالي الأرباح" value={`${kpis.totalProfit.toLocaleString("ar-EG")} ج.م`} icon={TrendingUp} tone="success" />
-        <KpiCard label="عدد المشاريع" value={String(kpis.count)} icon={Briefcase} tone="primary" />
+        <KpiCard label={t.kpiValue} value={`${kpis.totalContracts.toLocaleString(locale === "ar" ? "ar-EG" : "en-US")} ${locale === "ar" ? "ج.م" : "EGP"}`} icon={Coins} tone="primary" />
+        <KpiCard label={t.kpiExpenses} value={`${kpis.totalExpenses.toLocaleString(locale === "ar" ? "ar-EG" : "en-US")} ${locale === "ar" ? "ج.م" : "EGP"}`} icon={TrendingDown} tone="danger" />
+        <KpiCard label={t.kpiProfit} value={`${kpis.totalProfit.toLocaleString(locale === "ar" ? "ar-EG" : "en-US")} ${locale === "ar" ? "ج.م" : "EGP"}`} icon={TrendingUp} tone="success" />
+        <KpiCard label={t.kpiCount} value={String(kpis.count)} icon={Briefcase} tone="primary" />
       </div>
 
       <ExpensesByCategoryChart data={expensesByCategory} />
 
       <div className="card flex flex-col sm:flex-row gap-3 sm:items-end">
         <div className="flex-1">
-          <label className="text-sm text-neutral-600 block mb-1">فلترة باسم العميل</label>
+          <label className="text-sm text-neutral-600 block mb-1">{t.filterClient}</label>
           <input
             value={searchClient}
             onChange={(e) => setSearchClient(e.target.value)}
-            placeholder="اكتب اسم العميل..."
+            placeholder={t.filterClientPh}
             className="w-full border rounded-xl px-3 py-2"
           />
         </div>
         <div className="sm:w-56">
-          <label className="text-sm text-neutral-600 block mb-1">فلترة بحالة المشروع</label>
+          <label className="text-sm text-neutral-600 block mb-1">{t.filterStatus}</label>
           <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className="w-full border rounded-xl px-3 py-2">
             {statusOptions.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
           </select>
@@ -206,26 +286,26 @@ export default function ProjectsPage() {
 
       <div className="card !p-0 overflow-hidden">
         <div className="p-4 border-b">
-          <p className="font-semibold">جدول المشاريع والتدفق النقدي</p>
+          <p className="font-semibold">{t.tableTitle}</p>
         </div>
         <table className="w-full text-sm">
           <thead className="bg-neutral-50 text-neutral-500">
             <tr className="text-right">
-              <th className="p-3 font-medium">كود المشروع</th>
-              <th className="p-3 font-medium">اسم المشروع</th>
-              <th className="p-3 font-medium">العميل</th>
-              <th className="p-3 font-medium">قيمة العقد</th>
-              <th className="p-3 font-medium">المصروفات</th>
-              <th className="p-3 font-medium">الربح</th>
-              <th className="p-3 font-medium">المحصّل (مستخلصات مصروفة)</th>
-              <th className="p-3 font-medium">التدفق النقدي</th>
-              <th className="p-3 font-medium">الحالة</th>
+              <th className="p-3 font-medium">{t.thCode}</th>
+              <th className="p-3 font-medium">{t.thName}</th>
+              <th className="p-3 font-medium">{t.thClient}</th>
+              <th className="p-3 font-medium">{t.thValue}</th>
+              <th className="p-3 font-medium">{t.thExpenses}</th>
+              <th className="p-3 font-medium">{t.thProfit}</th>
+              <th className="p-3 font-medium">{t.thCollected}</th>
+              <th className="p-3 font-medium">{t.thCashFlow}</th>
+              <th className="p-3 font-medium">{t.thStatus}</th>
             </tr>
           </thead>
           <tbody>
-            {loading && <tr><td className="p-4 text-neutral-400" colSpan={9}>جارٍ التحميل...</td></tr>}
+            {loading && <tr><td className="p-4 text-neutral-400" colSpan={9}>{t.loading}</td></tr>}
             {!loading && rows.length === 0 && (
-              <tr><td className="p-4 text-neutral-400" colSpan={9}>لا يوجد مشاريع مطابقة.</td></tr>
+              <tr><td className="p-4 text-neutral-400" colSpan={9}>{t.noMatch}</td></tr>
             )}
             {rows.map((p) => (
               <tr key={p.id} className="border-t hover:bg-neutral-50">
@@ -236,14 +316,14 @@ export default function ProjectsPage() {
                   <Link href={`/projects/${p.id}`} className="hover:underline">{p.name}</Link>
                 </td>
                 <td className="p-3">{p.client.name}</td>
-                <td className="p-3">{Number(p.contractValue).toLocaleString("ar-EG")} ج.م</td>
-                <td className="p-3 text-danger">{p.totalExpenses.toLocaleString("ar-EG")} ج.م</td>
-                <td className={`p-3 font-medium ${p.netProfit >= 0 ? "text-success" : "text-danger"}`}>{p.netProfit.toLocaleString("ar-EG")} ج.م</td>
-                <td className="p-3">{p.totalCollected.toLocaleString("ar-EG")} ج.م</td>
+                <td className="p-3">{Number(p.contractValue).toLocaleString(locale === "ar" ? "ar-EG" : "en-US")}</td>
+                <td className="p-3 text-danger">{p.totalExpenses.toLocaleString(locale === "ar" ? "ar-EG" : "en-US")}</td>
+                <td className={`p-3 font-medium ${p.netProfit >= 0 ? "text-success" : "text-danger"}`}>{p.netProfit.toLocaleString(locale === "ar" ? "ar-EG" : "en-US")}</td>
+                <td className="p-3">{p.totalCollected.toLocaleString(locale === "ar" ? "ar-EG" : "en-US")}</td>
                 <td className="p-3">
                   <span className={`text-xs px-2.5 py-1 rounded-full font-medium flex items-center gap-1 w-fit ${p.cashFlow >= 0 ? "bg-success/10 text-success" : "bg-danger/10 text-danger"}`}>
                     {p.cashFlow >= 0 ? <CashUp size={12} /> : <CashDown size={12} />}
-                    {p.cashFlow.toLocaleString("ar-EG")} ج.م
+                    {p.cashFlow.toLocaleString(locale === "ar" ? "ar-EG" : "en-US")}
                   </span>
                 </td>
                 <td className="p-3"><StatusBadge status={p.status} /></td>
@@ -253,12 +333,12 @@ export default function ProjectsPage() {
           {rows.length > 0 && (
             <tfoot>
               <tr className="border-t bg-neutral-50 font-semibold">
-                <td className="p-3" colSpan={3}>الإجمالي</td>
-                <td className="p-3">{rows.reduce((s, p) => s + Number(p.contractValue), 0).toLocaleString("ar-EG")} ج.م</td>
-                <td className="p-3 text-danger">{rows.reduce((s, p) => s + p.totalExpenses, 0).toLocaleString("ar-EG")} ج.م</td>
-                <td className="p-3 text-success">{rows.reduce((s, p) => s + p.netProfit, 0).toLocaleString("ar-EG")} ج.م</td>
-                <td className="p-3">{rows.reduce((s, p) => s + p.totalCollected, 0).toLocaleString("ar-EG")} ج.م</td>
-                <td className="p-3">{rows.reduce((s, p) => s + p.cashFlow, 0).toLocaleString("ar-EG")} ج.م</td>
+                <td className="p-3" colSpan={3}>{t.total}</td>
+                <td className="p-3">{rows.reduce((s, p) => s + Number(p.contractValue), 0).toLocaleString(locale === "ar" ? "ar-EG" : "en-US")}</td>
+                <td className="p-3 text-danger">{rows.reduce((s, p) => s + p.totalExpenses, 0).toLocaleString(locale === "ar" ? "ar-EG" : "en-US")}</td>
+                <td className="p-3 text-success">{rows.reduce((s, p) => s + p.netProfit, 0).toLocaleString(locale === "ar" ? "ar-EG" : "en-US")}</td>
+                <td className="p-3">{rows.reduce((s, p) => s + p.totalCollected, 0).toLocaleString(locale === "ar" ? "ar-EG" : "en-US")}</td>
+                <td className="p-3">{rows.reduce((s, p) => s + p.cashFlow, 0).toLocaleString(locale === "ar" ? "ar-EG" : "en-US")}</td>
                 <td className="p-3"></td>
               </tr>
             </tfoot>

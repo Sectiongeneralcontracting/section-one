@@ -10,8 +10,14 @@ function getLocaleCookie(): "ar" | "en" {
   return (match?.[1] as "ar" | "en") ?? "ar";
 }
 
+const roleLabels: Record<string, { ar: string; en: string }> = {
+  ADMIN: { ar: "مدير النظام", en: "Admin" },
+  MANAGER: { ar: "مدير", en: "Manager" },
+  VIEWER: { ar: "مشاهد", en: "Viewer" },
+};
+
 export function UserMenu() {
-  const [user, setUser] = useState<{ name: string; roleLabel: string } | null>(null);
+  const [user, setUser] = useState<{ name: string; role: string } | null>(null);
   const [open, setOpen] = useState(false);
   const [locale, setLocale] = useState<"ar" | "en">("ar");
 
@@ -46,7 +52,7 @@ export function UserMenu() {
           </div>
           <div className="text-right hidden sm:block">
             <p className="text-xs font-medium leading-none">{user?.name ?? "..."}</p>
-            <p className="text-[10px] text-neutral-400 mt-0.5">{user?.roleLabel}</p>
+            <p className="text-[10px] text-neutral-400 mt-0.5">{user ? roleLabels[user.role]?.[locale] ?? user.role : ""}</p>
           </div>
           <ChevronDown size={14} className="text-neutral-400" />
         </button>
@@ -58,7 +64,7 @@ export function UserMenu() {
               className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-danger hover:bg-danger/5 rounded-xl"
             >
               <LogOut size={15} />
-              تسجيل الخروج
+              {locale === "ar" ? "تسجيل الخروج" : "Log out"}
             </button>
           </div>
         )}
