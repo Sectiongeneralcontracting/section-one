@@ -117,6 +117,9 @@ model Project {
   endDate        DateTime?
   status         ProjectStatus @default(ONGOING)
   description    String?
+  latitude       Float?        // موقع المشروع على الخريطة
+  longitude      Float?
+  completionPct  Int           @default(0) // نسبة الإنجاز %
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
 
@@ -128,8 +131,64 @@ model Project {
   stockMovements       StockMovement[]
   equipmentAssignments EquipmentAssignment[]
   clientPayments       ClientPayment[]
+  tasks                ProjectTask[]
+  milestones           Milestone[]
+  variationOrders      VariationOrder[]
 
   @@map("projects")
+}
+
+// بند من البرنامج الزمني (Gantt)
+model ProjectTask {
+  id        String   @id @default(cuid())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id])
+  name      String
+  startDate DateTime
+  endDate   DateTime
+  progress  Int      @default(0) // %
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@map("project_tasks")
+}
+
+// مرحلة رئيسية في المشروع
+model Milestone {
+  id          String    @id @default(cuid())
+  projectId   String
+  project     Project   @relation(fields: [projectId], references: [id])
+  name        String
+  dueDate     DateTime
+  completed   Boolean   @default(false)
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@map("milestones")
+}
+
+enum VariationOrderStatus {
+  DRAFT
+  APPROVED
+  REJECTED
+}
+
+// أمر تغيير — بيعدّل قيمة العقد الفعلية بعد الاعتماد (زيادة أو نقصان)
+model VariationOrder {
+  id          String               @id @default(cuid())
+  projectId   String
+  project     Project              @relation(fields: [projectId], references: [id])
+  orderNumber String
+  description String
+  amount      Decimal              @db.Decimal(18, 2) // ممكن تكون سالبة (تخفيض)
+  status      VariationOrderStatus @default(DRAFT)
+  date        DateTime             @default(now())
+  notes       String?
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+
+  @@unique([projectId, orderNumber])
+  @@map("variation_orders")
 }
 
 enum ExpenseCategory {
@@ -591,6 +650,8 @@ enum NotificationType {
   EQUIPMENT_MAINTENANCE
   PAYROLL_GENERATED
   PAYROLL_PAID
+  MILESTONE_COMPLETED
+  VARIATION_ORDER_APPROVED
 }
 
 model Notification {

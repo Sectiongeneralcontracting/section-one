@@ -37,6 +37,31 @@ const dict = {
     savePayment: "حفظ الدفعة", errPayment: "تعذر تسجيل الدفعة", noPayments: "لا يوجد دفعات مسجلة بعد.",
     thPaymentDate: "التاريخ", thPaymentAmount: "القيمة", thPaymentNotes: "ملاحظات",
     totalClientPaid: "إجمالي المدفوع من العميل",
+    // نسبة الإنجاز
+    progressTitle: "نسبة الإنجاز", saveProgress: "حفظ النسبة", errProgress: "تعذر حفظ النسبة",
+    // الموقع على الخريطة
+    locationTitle: "موقع المشروع على الخريطة", latitude: "خط العرض (Latitude)", longitude: "خط الطول (Longitude)",
+    saveLocation: "حفظ الموقع", errLocation: "تعذر حفظ الموقع", noLocation: "لسه محددتش موقع المشروع على الخريطة.",
+    howToGetCoords: "افتح خرائط جوجل، دوس كليك يمين على مكان المشروع، وانسخ الإحداثيات اللي بتظهر.",
+    openInMaps: "افتح في خرائط جوجل",
+    // البرنامج الزمني (Gantt)
+    ganttTitle: "البرنامج الزمني (Gantt)", newTask: "بند جديد", taskName: "اسم البند *",
+    startDate: "تاريخ البداية *", endDate: "تاريخ النهاية *", progress: "نسبة الإنجاز %",
+    saveTask: "حفظ البند", errTask: "تعذر حفظ البند", noTasks: "لا يوجد بنود بالبرنامج الزمني بعد.",
+    deleteTask: "حذف", confirmDeleteTask: "تأكيد حذف البند؟",
+    // المراحل
+    milestonesTitle: "المراحل (Milestones)", newMilestone: "مرحلة جديدة", milestoneName: "اسم المرحلة *",
+    dueDate: "تاريخ الاستحقاق *", saveMilestone: "حفظ المرحلة", errMilestone: "تعذر حفظ المرحلة",
+    noMilestones: "لا يوجد مراحل مسجلة بعد.", markComplete: "تعليم كمكتملة", markIncomplete: "إلغاء الإكمال",
+    completedOn: "اكتملت في",
+    // أوامر التغيير
+    variationOrdersTitle: "أوامر التغيير (Variation Orders)", newVariationOrder: "أمر تغيير جديد",
+    voNumber: "رقم الأمر *", voDescription: "الوصف *", voAmount: "القيمة (+/-) *",
+    saveVariationOrder: "حفظ أمر التغيير", errVariationOrder: "تعذر حفظ أمر التغيير",
+    noVariationOrders: "لا يوجد أوامر تغيير مسجلة بعد.", approve: "اعتماد", reject: "رفض",
+    thVoNumber: "الرقم", thVoDescription: "الوصف", thVoAmount: "القيمة", thVoStatus: "الحالة",
+    voStatusDraft: "مسودة", voStatusApproved: "معتمد", voStatusRejected: "مرفوض",
+    effectiveValue: "قيمة العقد الفعلية (بعد أوامر التغيير)",
   },
   en: {
     loading: "Loading...", edit: "Edit", cancelEdit: "Cancel Edit",
@@ -58,6 +83,26 @@ const dict = {
     savePayment: "Save Payment", errPayment: "Failed to record payment", noPayments: "No payments recorded yet.",
     thPaymentDate: "Date", thPaymentAmount: "Amount", thPaymentNotes: "Notes",
     totalClientPaid: "Total Paid by Client",
+    progressTitle: "Progress", saveProgress: "Save Progress", errProgress: "Failed to save progress",
+    locationTitle: "Project Location on Map", latitude: "Latitude", longitude: "Longitude",
+    saveLocation: "Save Location", errLocation: "Failed to save location", noLocation: "Project location not set yet.",
+    howToGetCoords: "Open Google Maps, right-click the project location, and copy the coordinates shown.",
+    openInMaps: "Open in Google Maps",
+    ganttTitle: "Schedule (Gantt)", newTask: "New Task", taskName: "Task Name *",
+    startDate: "Start Date *", endDate: "End Date *", progress: "Progress %",
+    saveTask: "Save Task", errTask: "Failed to save task", noTasks: "No schedule tasks yet.",
+    deleteTask: "Delete", confirmDeleteTask: "Confirm deleting this task?",
+    milestonesTitle: "Milestones", newMilestone: "New Milestone", milestoneName: "Milestone Name *",
+    dueDate: "Due Date *", saveMilestone: "Save Milestone", errMilestone: "Failed to save milestone",
+    noMilestones: "No milestones recorded yet.", markComplete: "Mark Complete", markIncomplete: "Undo Complete",
+    completedOn: "Completed on",
+    variationOrdersTitle: "Variation Orders", newVariationOrder: "New Variation Order",
+    voNumber: "Order Number *", voDescription: "Description *", voAmount: "Amount (+/-) *",
+    saveVariationOrder: "Save Variation Order", errVariationOrder: "Failed to save variation order",
+    noVariationOrders: "No variation orders recorded yet.", approve: "Approve", reject: "Reject",
+    thVoNumber: "Number", thVoDescription: "Description", thVoAmount: "Amount", thVoStatus: "Status",
+    voStatusDraft: "Draft", voStatusApproved: "Approved", voStatusRejected: "Rejected",
+    effectiveValue: "Effective Contract Value (after variation orders)",
   },
 };
 
@@ -89,6 +134,34 @@ export default function ProjectDetailPage() {
   const [paymentError, setPaymentError] = useState("");
   const [paymentForm, setPaymentForm] = useState({ amount: 0, date: "", notes: "" });
 
+  // نسبة الإنجاز
+  const [progressValue, setProgressValue] = useState(0);
+  const [progressSaving, setProgressSaving] = useState(false);
+  const [progressError, setProgressError] = useState("");
+
+  // الموقع على الخريطة
+  const [locationForm, setLocationForm] = useState({ latitude: "", longitude: "" });
+  const [locationSaving, setLocationSaving] = useState(false);
+  const [locationError, setLocationError] = useState("");
+
+  // البرنامج الزمني (Gantt)
+  const [showTaskForm, setShowTaskForm] = useState(false);
+  const [taskSaving, setTaskSaving] = useState(false);
+  const [taskError, setTaskError] = useState("");
+  const [taskForm, setTaskForm] = useState({ name: "", startDate: "", endDate: "", progress: 0 });
+
+  // المراحل
+  const [showMilestoneForm, setShowMilestoneForm] = useState(false);
+  const [milestoneSaving, setMilestoneSaving] = useState(false);
+  const [milestoneError, setMilestoneError] = useState("");
+  const [milestoneForm, setMilestoneForm] = useState({ name: "", dueDate: "" });
+
+  // أوامر التغيير
+  const [showVoForm, setShowVoForm] = useState(false);
+  const [voSaving, setVoSaving] = useState(false);
+  const [voError, setVoError] = useState("");
+  const [voForm, setVoForm] = useState({ orderNumber: "", description: "", amount: 0 });
+
   async function load() {
     const res = await fetch(`/api/projects/${id}`);
     if (res.ok) {
@@ -96,6 +169,8 @@ export default function ProjectDetailPage() {
       setProject(data);
       setAllocations(data.partnerAllocations.map((a: any) => ({ partnerId: a.partnerId, contributionAmount: Number(a.contributionAmount) })));
       setProjectForm({ name: data.name, contractValue: Number(data.contractValue), description: data.description ?? "" });
+      setProgressValue(data.completionPct ?? 0);
+      setLocationForm({ latitude: data.latitude != null ? String(data.latitude) : "", longitude: data.longitude != null ? String(data.longitude) : "" });
     }
     const pRes = await fetch("/api/partners");
     if (pRes.ok) setAllPartners(await pRes.json());
@@ -177,6 +252,109 @@ export default function ProjectDetailPage() {
     load();
   }
 
+  async function saveProgress() {
+    setProgressSaving(true);
+    setProgressError("");
+    const res = await fetch(`/api/projects/${id}/progress`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ completionPct: progressValue }),
+    });
+    setProgressSaving(false);
+    if (!res.ok) return setProgressError((await res.json()).error ?? t.errProgress);
+    load();
+  }
+
+  async function saveLocation(e: React.FormEvent) {
+    e.preventDefault();
+    setLocationSaving(true);
+    setLocationError("");
+    const res = await fetch(`/api/projects/${id}/location`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        latitude: locationForm.latitude === "" ? null : Number(locationForm.latitude),
+        longitude: locationForm.longitude === "" ? null : Number(locationForm.longitude),
+      }),
+    });
+    setLocationSaving(false);
+    if (!res.ok) return setLocationError((await res.json()).error ?? t.errLocation);
+    load();
+  }
+
+  async function addTask(e: React.FormEvent) {
+    e.preventDefault();
+    setTaskSaving(true);
+    setTaskError("");
+    const res = await fetch(`/api/projects/${id}/tasks`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(taskForm),
+    });
+    setTaskSaving(false);
+    if (!res.ok) return setTaskError((await res.json()).error ?? t.errTask);
+    setTaskForm({ name: "", startDate: "", endDate: "", progress: 0 });
+    setShowTaskForm(false);
+    load();
+  }
+
+  async function deleteTask(taskId: string) {
+    if (!confirm(t.confirmDeleteTask)) return;
+    await fetch(`/api/tasks/${taskId}`, { method: "DELETE" });
+    load();
+  }
+
+  async function addMilestone(e: React.FormEvent) {
+    e.preventDefault();
+    setMilestoneSaving(true);
+    setMilestoneError("");
+    const res = await fetch(`/api/projects/${id}/milestones`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(milestoneForm),
+    });
+    setMilestoneSaving(false);
+    if (!res.ok) return setMilestoneError((await res.json()).error ?? t.errMilestone);
+    setMilestoneForm({ name: "", dueDate: "" });
+    setShowMilestoneForm(false);
+    load();
+  }
+
+  async function toggleMilestone(milestoneId: string, completed: boolean) {
+    await fetch(`/api/milestones/${milestoneId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ completed }),
+    });
+    load();
+  }
+
+  async function addVariationOrder(e: React.FormEvent) {
+    e.preventDefault();
+    setVoSaving(true);
+    setVoError("");
+    const res = await fetch(`/api/projects/${id}/variation-orders`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(voForm),
+    });
+    setVoSaving(false);
+    if (!res.ok) return setVoError((await res.json()).error ?? t.errVariationOrder);
+    setVoForm({ orderNumber: "", description: "", amount: 0 });
+    setShowVoForm(false);
+    load();
+  }
+
+  async function transitionVo(voId: string, status: "APPROVED" | "REJECTED") {
+    const res = await fetch(`/api/variation-orders/${voId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status }),
+    });
+    if (!res.ok) return alert((await res.json()).error ?? t.errVariationOrder);
+    load();
+  }
+
   async function closeProject() {
     if (!confirm(t.confirmClose)) return;
     const res = await fetch(`/api/projects/${id}`, {
@@ -205,7 +383,9 @@ export default function ProjectDetailPage() {
 
   const totalExpenses = project.expenses.reduce((s: number, e: any) => s + Number(e.amount), 0);
   const totalClientPaid = (project.clientPayments ?? []).reduce((s: number, p: any) => s + Number(p.amount), 0);
-  const netProfit = Number(project.contractValue) - totalExpenses;
+  const approvedVariations = (project.variationOrders ?? []).filter((v: any) => v.status === "APPROVED").reduce((s: number, v: any) => s + Number(v.amount), 0);
+  const effectiveContractValue = Number(project.contractValue) + approvedVariations;
+  const netProfit = effectiveContractValue - totalExpenses;
 
   return (
     <AppShell
@@ -239,6 +419,11 @@ export default function ProjectDetailPage() {
         <div className="card"><p className="text-sm text-neutral-500">{t.totalClientPaid}</p><p className="font-bold text-success">{totalClientPaid.toLocaleString(localeCode)} {currency}</p></div>
         <div className="card"><p className="text-sm text-neutral-500">{t.netProfit}</p><p className="font-bold text-success">{netProfit.toLocaleString(localeCode)} {currency}</p></div>
       </div>
+      {approvedVariations !== 0 && (
+        <p className="text-xs text-neutral-500">
+          {t.effectiveValue}: <span className="font-semibold">{effectiveContractValue.toLocaleString(localeCode)} {currency}</span>
+        </p>
+      )}
 
       {editingProject && (
         <form onSubmit={saveProjectInfo} className="card grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -267,6 +452,265 @@ export default function ProjectDetailPage() {
       <div className="flex items-center gap-3">
         <StatusBadge status={project.status} />
         <span className="text-sm text-neutral-500">{t.projectCode}: {project.code}</span>
+      </div>
+
+      {/* نسبة الإنجاز */}
+      <div className="card space-y-3">
+        <h2 className="font-semibold">{t.progressTitle}</h2>
+        <div className="flex items-center gap-4">
+          <div className="flex-1 h-3 rounded-full bg-neutral-100 overflow-hidden">
+            <div className="h-full bg-primary transition-all" style={{ width: `${progressValue}%` }} />
+          </div>
+          <span className="text-sm font-bold w-12 text-left">{progressValue}%</span>
+        </div>
+        {project.status !== "CLOSED" && (
+          <div className="flex items-center gap-3">
+            <input
+              type="range"
+              min={0}
+              max={100}
+              value={progressValue}
+              onChange={(e) => setProgressValue(Number(e.target.value))}
+              className="flex-1"
+            />
+            <button onClick={saveProgress} disabled={progressSaving} className="bg-primary text-white rounded-xl px-4 py-1.5 text-sm font-medium disabled:opacity-60">
+              {progressSaving ? t.saving : t.saveProgress}
+            </button>
+          </div>
+        )}
+        {progressError && <p className="text-danger text-sm">{progressError}</p>}
+      </div>
+
+      {/* الموقع على الخريطة */}
+      <div className="card space-y-3">
+        <h2 className="font-semibold">{t.locationTitle}</h2>
+        {project.latitude != null && project.longitude != null ? (
+          <div className="rounded-xl overflow-hidden border" style={{ height: 300 }}>
+            <iframe
+              title="project-location"
+              width="100%"
+              height="100%"
+              style={{ border: 0 }}
+              src={`https://www.google.com/maps?q=${project.latitude},${project.longitude}&z=15&output=embed`}
+            />
+          </div>
+        ) : (
+          <p className="text-sm text-neutral-400">{t.noLocation}</p>
+        )}
+        {project.status !== "CLOSED" && (
+          <form onSubmit={saveLocation} className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
+            <div>
+              <label className="text-sm text-neutral-600 block mb-1">{t.latitude}</label>
+              <input type="number" step="0.000001" value={locationForm.latitude} onChange={(e) => setLocationForm({ ...locationForm, latitude: e.target.value })} className="w-full border rounded-xl px-3 py-2" placeholder="30.123456" />
+            </div>
+            <div>
+              <label className="text-sm text-neutral-600 block mb-1">{t.longitude}</label>
+              <input type="number" step="0.000001" value={locationForm.longitude} onChange={(e) => setLocationForm({ ...locationForm, longitude: e.target.value })} className="w-full border rounded-xl px-3 py-2" placeholder="31.123456" />
+            </div>
+            <button disabled={locationSaving} className="bg-primary text-white rounded-xl px-4 py-2 text-sm font-medium disabled:opacity-60">
+              {locationSaving ? t.saving : t.saveLocation}
+            </button>
+          </form>
+        )}
+        {locationError && <p className="text-danger text-sm">{locationError}</p>}
+        <p className="text-xs text-neutral-400">
+          {t.howToGetCoords}{" "}
+          <a href="https://www.google.com/maps" target="_blank" rel="noreferrer" className="text-primary hover:underline">
+            {t.openInMaps}
+          </a>
+        </p>
+      </div>
+
+      {/* البرنامج الزمني (Gantt) */}
+      <div className="flex items-center justify-between">
+        <h2 className="font-semibold">{t.ganttTitle}</h2>
+        {project.status !== "CLOSED" && (
+          <button onClick={() => setShowTaskForm((v) => !v)} className="bg-primary text-white text-sm px-3 py-1.5 rounded-xl flex items-center gap-1.5">
+            {showTaskForm ? <X size={14} /> : <Plus size={14} />} {t.newTask}
+          </button>
+        )}
+      </div>
+      {showTaskForm && (
+        <form onSubmit={addTask} className="card grid grid-cols-1 sm:grid-cols-4 gap-4">
+          <div className="sm:col-span-2">
+            <label className="text-sm text-neutral-600 block mb-1">{t.taskName}</label>
+            <input required value={taskForm.name} onChange={(e) => setTaskForm({ ...taskForm, name: e.target.value })} className="w-full border rounded-xl px-3 py-2" />
+          </div>
+          <div>
+            <label className="text-sm text-neutral-600 block mb-1">{t.startDate}</label>
+            <input required type="date" value={taskForm.startDate} onChange={(e) => setTaskForm({ ...taskForm, startDate: e.target.value })} className="w-full border rounded-xl px-3 py-2" />
+          </div>
+          <div>
+            <label className="text-sm text-neutral-600 block mb-1">{t.endDate}</label>
+            <input required type="date" value={taskForm.endDate} onChange={(e) => setTaskForm({ ...taskForm, endDate: e.target.value })} className="w-full border rounded-xl px-3 py-2" />
+          </div>
+          {taskError && <p className="text-danger text-sm sm:col-span-4">{taskError}</p>}
+          <div className="sm:col-span-4">
+            <button disabled={taskSaving} className="bg-primary text-white rounded-xl px-5 py-2 text-sm font-medium disabled:opacity-60">
+              {taskSaving ? t.saving : t.saveTask}
+            </button>
+          </div>
+        </form>
+      )}
+      <div className="card space-y-3">
+        {(project.tasks ?? []).length === 0 && <p className="text-sm text-neutral-400">{t.noTasks}</p>}
+        {(project.tasks ?? []).length > 0 && (() => {
+          const tasks = project.tasks;
+          const allDates = tasks.flatMap((tk: any) => [new Date(tk.startDate).getTime(), new Date(tk.endDate).getTime()]);
+          const minDate = Math.min(...allDates);
+          const maxDate = Math.max(...allDates);
+          const span = Math.max(maxDate - minDate, 1);
+          return (
+            <div className="space-y-2">
+              {tasks.map((tk: any) => {
+                const left = ((new Date(tk.startDate).getTime() - minDate) / span) * 100;
+                const width = Math.max(((new Date(tk.endDate).getTime() - new Date(tk.startDate).getTime()) / span) * 100, 2);
+                return (
+                  <div key={tk.id} className="flex items-center gap-3">
+                    <span className="text-sm w-32 truncate shrink-0" title={tk.name}>{tk.name}</span>
+                    <div className="flex-1 relative h-6 bg-neutral-50 rounded-lg">
+                      <div
+                        className="absolute h-full rounded-lg bg-primary/20 border border-primary/40 flex items-center overflow-hidden"
+                        style={{ left: `${left}%`, width: `${width}%` }}
+                      >
+                        <div className="h-full bg-primary" style={{ width: `${tk.progress}%` }} />
+                      </div>
+                    </div>
+                    <span className="text-xs text-neutral-400 w-10 shrink-0">{tk.progress}%</span>
+                    {project.status !== "CLOSED" && (
+                      <button onClick={() => deleteTask(tk.id)} className="text-danger text-xs shrink-0">{t.deleteTask}</button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })()}
+      </div>
+
+      {/* المراحل (Milestones) */}
+      <div className="flex items-center justify-between">
+        <h2 className="font-semibold">{t.milestonesTitle}</h2>
+        {project.status !== "CLOSED" && (
+          <button onClick={() => setShowMilestoneForm((v) => !v)} className="bg-primary text-white text-sm px-3 py-1.5 rounded-xl flex items-center gap-1.5">
+            {showMilestoneForm ? <X size={14} /> : <Plus size={14} />} {t.newMilestone}
+          </button>
+        )}
+      </div>
+      {showMilestoneForm && (
+        <form onSubmit={addMilestone} className="card grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="sm:col-span-2">
+            <label className="text-sm text-neutral-600 block mb-1">{t.milestoneName}</label>
+            <input required value={milestoneForm.name} onChange={(e) => setMilestoneForm({ ...milestoneForm, name: e.target.value })} className="w-full border rounded-xl px-3 py-2" />
+          </div>
+          <div>
+            <label className="text-sm text-neutral-600 block mb-1">{t.dueDate}</label>
+            <input required type="date" value={milestoneForm.dueDate} onChange={(e) => setMilestoneForm({ ...milestoneForm, dueDate: e.target.value })} className="w-full border rounded-xl px-3 py-2" />
+          </div>
+          {milestoneError && <p className="text-danger text-sm sm:col-span-3">{milestoneError}</p>}
+          <div className="sm:col-span-3">
+            <button disabled={milestoneSaving} className="bg-primary text-white rounded-xl px-5 py-2 text-sm font-medium disabled:opacity-60">
+              {milestoneSaving ? t.saving : t.saveMilestone}
+            </button>
+          </div>
+        </form>
+      )}
+      <div className="card !p-0 overflow-hidden">
+        {(project.milestones ?? []).length === 0 ? (
+          <p className="p-4 text-sm text-neutral-400">{t.noMilestones}</p>
+        ) : (
+          <ul className="divide-y">
+            {project.milestones.map((m: any) => (
+              <li key={m.id} className="p-3 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <input
+                    type="checkbox"
+                    checked={m.completed}
+                    disabled={project.status === "CLOSED"}
+                    onChange={(e) => toggleMilestone(m.id, e.target.checked)}
+                  />
+                  <div>
+                    <p className={`text-sm font-medium ${m.completed ? "line-through text-neutral-400" : ""}`}>{m.name}</p>
+                    <p className="text-xs text-neutral-400">
+                      {t.dueDate.replace(" *", "")}: {new Date(m.dueDate).toLocaleDateString(localeCode)}
+                      {m.completed && m.completedAt && ` — ${t.completedOn} ${new Date(m.completedAt).toLocaleDateString(localeCode)}`}
+                    </p>
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      {/* أوامر التغيير (Variation Orders) */}
+      <div className="flex items-center justify-between">
+        <h2 className="font-semibold">{t.variationOrdersTitle}</h2>
+        {project.status !== "CLOSED" && (
+          <button onClick={() => setShowVoForm((v) => !v)} className="bg-primary text-white text-sm px-3 py-1.5 rounded-xl flex items-center gap-1.5">
+            {showVoForm ? <X size={14} /> : <Plus size={14} />} {t.newVariationOrder}
+          </button>
+        )}
+      </div>
+      {showVoForm && (
+        <form onSubmit={addVariationOrder} className="card grid grid-cols-1 sm:grid-cols-4 gap-4">
+          <div>
+            <label className="text-sm text-neutral-600 block mb-1">{t.voNumber}</label>
+            <input required value={voForm.orderNumber} onChange={(e) => setVoForm({ ...voForm, orderNumber: e.target.value })} className="w-full border rounded-xl px-3 py-2" placeholder="VO-001" />
+          </div>
+          <div className="sm:col-span-2">
+            <label className="text-sm text-neutral-600 block mb-1">{t.voDescription}</label>
+            <input required value={voForm.description} onChange={(e) => setVoForm({ ...voForm, description: e.target.value })} className="w-full border rounded-xl px-3 py-2" />
+          </div>
+          <div>
+            <label className="text-sm text-neutral-600 block mb-1">{t.voAmount}</label>
+            <input required type="number" step="0.01" value={voForm.amount} onChange={(e) => setVoForm({ ...voForm, amount: Number(e.target.value) })} className="w-full border rounded-xl px-3 py-2" />
+          </div>
+          {voError && <p className="text-danger text-sm sm:col-span-4">{voError}</p>}
+          <div className="sm:col-span-4">
+            <button disabled={voSaving} className="bg-primary text-white rounded-xl px-5 py-2 text-sm font-medium disabled:opacity-60">
+              {voSaving ? t.saving : t.saveVariationOrder}
+            </button>
+          </div>
+        </form>
+      )}
+      <div className="card !p-0 overflow-hidden">
+        <table className="w-full text-sm">
+          <thead className="bg-neutral-50 text-neutral-500">
+            <tr className="text-right">
+              <th className="p-3 font-medium">{t.thVoNumber}</th>
+              <th className="p-3 font-medium">{t.thVoDescription}</th>
+              <th className="p-3 font-medium">{t.thVoAmount}</th>
+              <th className="p-3 font-medium">{t.thVoStatus}</th>
+              <th className="p-3 font-medium"></th>
+            </tr>
+          </thead>
+          <tbody>
+            {(project.variationOrders ?? []).length === 0 && (
+              <tr><td className="p-4 text-neutral-400" colSpan={5}>{t.noVariationOrders}</td></tr>
+            )}
+            {(project.variationOrders ?? []).map((v: any) => (
+              <tr key={v.id} className="border-t">
+                <td className="p-3">{v.orderNumber}</td>
+                <td className="p-3">{v.description}</td>
+                <td className={`p-3 font-semibold ${Number(v.amount) >= 0 ? "text-success" : "text-danger"}`}>{Number(v.amount).toLocaleString(localeCode)} {currency}</td>
+                <td className="p-3">
+                  <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${v.status === "APPROVED" ? "bg-success/10 text-success" : v.status === "REJECTED" ? "bg-danger/10 text-danger" : "bg-neutral-100 text-neutral-500"}`}>
+                    {v.status === "APPROVED" ? t.voStatusApproved : v.status === "REJECTED" ? t.voStatusRejected : t.voStatusDraft}
+                  </span>
+                </td>
+                <td className="p-3 flex gap-2">
+                  {v.status === "DRAFT" && (
+                    <>
+                      <button onClick={() => transitionVo(v.id, "APPROVED")} className="text-success text-xs">{t.approve}</button>
+                      <button onClick={() => transitionVo(v.id, "REJECTED")} className="text-danger text-xs">{t.reject}</button>
+                    </>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
 
       <div className="flex items-center justify-between">

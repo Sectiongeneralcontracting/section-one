@@ -17,6 +17,9 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
       partnerAllocations: { include: { partner: true } },
       closingReports: true,
       clientPayments: { orderBy: { date: "desc" } },
+      tasks: { orderBy: [{ sortOrder: "asc" }, { startDate: "asc" }] },
+      milestones: { orderBy: { dueDate: "asc" } },
+      variationOrders: { orderBy: { date: "desc" } },
     },
   });
   if (!project) return NextResponse.json({ error: "Not found" }, { status: 404 });
@@ -34,7 +37,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   const body = await req.json();
   const before = await prisma.project.findUnique({
     where: { id: params.id },
-    include: { expenses: true, partnerAllocations: true },
+    include: { expenses: true, partnerAllocations: true, variationOrders: true },
   });
   if (!before) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
@@ -43,8 +46,12 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     if (before.status === "CLOSED")
       return NextResponse.json({ error: "المشروع مغلق بالفعل" }, { status: 400 });
 
+    const approvedVariations = before.variationOrders
+      .filter((v) => v.status === "APPROVED")
+      .reduce((s, v) => s + Number(v.amount), 0);
+
     const totalExpense = before.expenses.reduce((s, e) => s + Number(e.amount), 0);
-    const totalRevenue = Number(before.contractValue);
+    const totalRevenue = Number(before.contractValue) + approvedVariations;
     const netProfit = totalRevenue - totalExpense;
 
     // توزيع ربح فعلي لكل شريك مشارك في المشروع حسب نسبته — بيتسجل بس دلوقتي وقت الإغلاق
