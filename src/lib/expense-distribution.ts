@@ -1,6 +1,8 @@
 import type { Prisma } from "@prisma/client";
 
-export type ProjectForDistribution = { id: string; contractValue: number | string };
+// contractValue بييجي من قاعدة البيانات كـ Prisma.Decimal، مش رقم عادي —
+// عشان كده لازم النوع يقبل أي حاجة عندها toString/toNumber (Decimal, string, أو number)
+export type ProjectForDistribution = { id: string; contractValue: unknown };
 
 export function computeDistributionShares<T extends ProjectForDistribution>(
   projects: T[],
