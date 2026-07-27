@@ -54,6 +54,7 @@ const dict = {
     kpiCount: "عدد المشاريع",
     filterClient: "فلترة باسم العميل",
     filterClientPh: "اكتب اسم العميل...",
+    allClients: "كل العملاء",
     filterStatus: "فلترة بحالة المشروع",
     allStatuses: "كل الحالات",
     tableTitle: "جدول المشاريع والتدفق النقدي",
@@ -92,6 +93,7 @@ const dict = {
     kpiCount: "Projects Count",
     filterClient: "Filter by client name",
     filterClientPh: "Type client name...",
+    allClients: "All clients",
     filterStatus: "Filter by project status",
     allStatuses: "All statuses",
     tableTitle: "Projects & Cash Flow Table",
@@ -163,7 +165,7 @@ export default function ProjectsPage() {
 
   const filteredProjects = useMemo(() => {
     return projects.filter((p) => {
-      const matchesClient = searchClient.trim() === "" || p.client.name.toLowerCase().includes(searchClient.trim().toLowerCase());
+      const matchesClient = searchClient === "" || p.client.name === searchClient;
       const matchesStatus = filterStatus === "" || p.status === filterStatus;
       return matchesClient && matchesStatus;
     });
@@ -274,12 +276,10 @@ export default function ProjectsPage() {
       <div className="card flex flex-col sm:flex-row gap-3 sm:items-end">
         <div className="flex-1">
           <label className="text-sm text-neutral-600 block mb-1">{t.filterClient}</label>
-          <input
-            value={searchClient}
-            onChange={(e) => setSearchClient(e.target.value)}
-            placeholder={t.filterClientPh}
-            className="w-full border rounded-xl px-3 py-2"
-          />
+          <select value={searchClient} onChange={(e) => setSearchClient(e.target.value)} className="w-full border rounded-xl px-3 py-2">
+            <option value="">{t.allClients}</option>
+            {clients.map((c) => <option key={c.id} value={c.name}>{c.name}</option>)}
+          </select>
         </div>
         <div className="sm:w-56">
           <label className="text-sm text-neutral-600 block mb-1">{t.filterStatus}</label>

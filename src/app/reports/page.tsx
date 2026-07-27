@@ -23,7 +23,7 @@ const dict = {
     partner: "الشريك", totalContributions: "إجمالي المساهمات",
     clientsReportTitle: "تقرير العملاء", projectsCount: "عدد المشاريع",
     projectsReportTitle: "تقرير المشروعات — الربح والخسارة", value: "قيمة العقد", expenses: "المصروفات",
-    filterByClientName: "فلترة باسم العميل", filterByClientNamePh: "اكتب اسم العميل...",
+    filterByClientName: "فلترة باسم العميل", filterByClientNamePh: "اكتب اسم العميل...", allClients: "كل العملاء",
     choosePartner: "اختر شريك لعرض تفاصيل أرباحه لكل مشروع", allPartners: "كل الشركاء (ملخص عام)",
     partnersReportTitle: "تقرير الشركاء — ملخص عام", defaultShare: "النسبة الافتراضية",
     loading: "جارٍ التحميل...", partnerTotalProfit: "إجمالي أرباح الشريك",
@@ -47,7 +47,7 @@ const dict = {
     partner: "Partner", totalContributions: "Total Contributions",
     clientsReportTitle: "Clients Report", projectsCount: "Projects Count",
     projectsReportTitle: "Projects Report — Profit & Loss", value: "Contract Value", expenses: "Expenses",
-    filterByClientName: "Filter by client name", filterByClientNamePh: "Type client name...",
+    filterByClientName: "Filter by client name", filterByClientNamePh: "Type client name...", allClients: "All clients",
     choosePartner: "Choose a partner to see their profit details per project", allPartners: "All Partners (summary)",
     partnersReportTitle: "Partners Report — Summary", defaultShare: "Default Share",
     loading: "Loading...", partnerTotalProfit: "Partner's Total Profit",
@@ -215,18 +215,20 @@ export default function ReportsPage() {
           <div className="space-y-4">
             <div className="print:hidden">
               <label className="text-sm text-neutral-600 block mb-1">{t.filterByClientName}</label>
-              <input
+              <select
                 value={projectsClientFilter}
                 onChange={(e) => setProjectsClientFilter(e.target.value)}
-                placeholder={t.filterByClientNamePh}
                 className="border rounded-xl px-3 py-2 text-sm w-full sm:w-72"
-              />
+              >
+                <option value="">{t.allClients}</option>
+                {clients.map((c) => <option key={c.id} value={c.name}>{c.name}</option>)}
+              </select>
             </div>
             <ReportTable
               title={t.projectsReportTitle}
               headers={[t.project, t.client, t.value, t.expenses, t.netProfit]}
               rows={projects
-                .filter((p) => !projectsClientFilter.trim() || (p.client?.name ?? "").toLowerCase().includes(projectsClientFilter.trim().toLowerCase()))
+                .filter((p) => !projectsClientFilter || (p.client?.name ?? "") === projectsClientFilter)
                 .map((p) => {
                   const exp = p.expenses?.reduce((s: number, e: any) => s + Number(e.amount), 0) ?? 0;
                   return [p.name, p.client?.name ?? "—", `${Number(p.contractValue).toLocaleString(localeCode)}`, `${exp.toLocaleString(localeCode)}`, `${(Number(p.contractValue) - exp).toLocaleString(localeCode)}`];
