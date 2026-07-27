@@ -65,3 +65,26 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 
   return NextResponse.json({ error: "الطلب ده اتحسم فيه بالفعل" }, { status: 400 });
 }
+
+export async function DELETE(_req: Request, { params }: { params: { id: string } }) {
+  const session = await getServerSession(authOptions);
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if ((session.user as any).role !== "ADMIN") {
+    return NextResponse.json({ error: "حذف الطلب يتطلب صلاحية Admin" }, { status: 403 });
+  }
+
+  const before = await prisma.siteRequest.findUnique({ where: { id: params.id } });
+  if (!before) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+  await prisma.siteRequest.delete({ where: { id: params.id } });
+
+  await logAudit({
+    userId: (session.user as any).id,
+    action: "SITE_REQUEST_DELETED",
+    entityType: "SiteRequest",
+    entityId: params.id,
+    before,
+  });
+
+  return NextResponse.json({ ok: true });
+}

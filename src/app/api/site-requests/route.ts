@@ -53,8 +53,15 @@ export async function POST(req: Request) {
   const project = await prisma.project.findUnique({ where: { id: parsed.data.projectId } });
   if (!project) return NextResponse.json({ error: "المشروع غير موجود" }, { status: 404 });
 
+  // توليد الرقم المسلسل والكود تلقائيًا — بأعلى رقم مسجل حاليًا + 1
+  const last = await prisma.siteRequest.findFirst({ orderBy: { serialNumber: "desc" }, select: { serialNumber: true } });
+  const nextSerial = (last?.serialNumber ?? 0) + 1;
+  const code = `SR-${String(nextSerial).padStart(6, "0")}`;
+
   const request_ = await prisma.siteRequest.create({
     data: {
+      serialNumber: nextSerial,
+      code,
       projectId: parsed.data.projectId,
       type: parsed.data.type,
       supplierId: parsed.data.supplierId,
