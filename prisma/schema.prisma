@@ -134,6 +134,7 @@ model Project {
   tasks                ProjectTask[]
   milestones           Milestone[]
   variationOrders      VariationOrder[]
+  employees            Employee[]
 
   @@map("projects")
 }
@@ -209,10 +210,40 @@ model Expense {
   description String?
   date        DateTime        @default(now())
   createdById String?
+  sourceHeadOfficeExpenseId String? // لو المصروف ده جزء موزّع من مصروف مكتب رئيسي
+  sourceHeadOfficeExpense   HeadOfficeExpense? @relation(fields: [sourceHeadOfficeExpenseId], references: [id])
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
 
   @@map("expenses")
+}
+
+enum HeadOfficeExpenseCategory {
+  OFFICE_RENT     // إيجار المكتب
+  TRANSPORTATION  // الانتقالات
+  WATER           // فواتير المياه
+  ELECTRICITY     // فواتير الكهرباء
+  PHONE           // فواتير التليفون
+  EMAIL_INTERNET  // اشتراكات الإيميل والإنترنت
+  BUFFET          // البوفيه
+  PAYROLL         // رواتب موظفي المكتب الرئيسي (موزّعة تلقائيًا)
+  OTHER
+}
+
+// مصروف عام على المكتب الرئيسي — بيتوزع تلقائيًا على المشاريع المفتوحة (ONGOING)
+// حسب نسبة قيمة كل مشروع من إجمالي قيمة المشاريع المفتوحة وقت التسجيل
+model HeadOfficeExpense {
+  id          String                    @id @default(cuid())
+  category    HeadOfficeExpenseCategory
+  amount      Decimal                   @db.Decimal(18, 2)
+  description String?
+  date        DateTime                  @default(now())
+  createdById String?
+  createdAt   DateTime                  @default(now())
+
+  distributedExpenses Expense[]
+
+  @@map("head_office_expenses")
 }
 
 // ---------------- Partners ----------------
@@ -570,6 +601,8 @@ model Employee {
   baseSalary  Decimal  @db.Decimal(18, 2)
   bankName          String? // لملف تحويل البنك
   bankAccountNumber String?
+  projectId   String?  // لو فاضي = مخصص للمكتب الرئيسي؛ ولو متحدد = محمّل على المشروع ده مباشرة
+  project     Project? @relation(fields: [projectId], references: [id])
   isActive    Boolean  @default(true)
   notes       String?
   createdAt   DateTime @default(now())
@@ -732,6 +765,7 @@ enum NotificationType {
   EMPLOYEE_ADVANCE_RECORDED
   EMPLOYEE_PENALTY_RECORDED
   LEAVE_REQUEST_SUBMITTED
+  HEAD_OFFICE_EXPENSE_DISTRIBUTED
 }
 
 model Notification {

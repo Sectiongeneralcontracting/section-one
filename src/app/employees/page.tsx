@@ -12,8 +12,10 @@ const dict = {
     hireDate: "تاريخ التعيين *", baseSalary: "الراتب الأساسي *", save: "حفظ الموظف",
     err: "تعذر حفظ الموظف",
     thName: "الاسم", thJobTitle: "المسمى الوظيفي", thDepartment: "القسم", thSalary: "الراتب الأساسي",
-    thStatus: "الحالة", loading: "جارٍ التحميل...", empty: "لا يوجد موظفون بعد.",
+    thAssignment: "التخصيص", thStatus: "الحالة", loading: "جارٍ التحميل...", empty: "لا يوجد موظفون بعد.",
     active: "نشط", inactive: "معطّل", enable: "تفعيل", disable: "تعطيل",
+    bankName: "اسم البنك", bankAccount: "رقم الحساب البنكي",
+    assignment: "التخصيص", headOffice: "المكتب الرئيسي (يوزّع على المشاريع المفتوحة)", changeAssignment: "تغيير",
   },
   en: {
     title: "Employees", newEmployee: "New Employee", cancel: "Cancel",
@@ -21,8 +23,10 @@ const dict = {
     hireDate: "Hire Date *", baseSalary: "Base Salary *", save: "Save Employee",
     err: "Failed to save employee",
     thName: "Name", thJobTitle: "Job Title", thDepartment: "Department", thSalary: "Base Salary",
-    thStatus: "Status", loading: "Loading...", empty: "No employees yet.",
+    thAssignment: "Assignment", thStatus: "Status", loading: "Loading...", empty: "No employees yet.",
     active: "Active", inactive: "Inactive", enable: "Enable", disable: "Disable",
+    bankName: "Bank Name", bankAccount: "Bank Account Number",
+    assignment: "Assignment", headOffice: "Head Office (distributed across open projects)", changeAssignment: "Change",
   },
 };
 
@@ -30,16 +34,19 @@ export default function EmployeesPage() {
   const locale = useLocale();
   const t = dict[locale];
   const [employees, setEmployees] = useState<any[]>([]);
+  const [projects, setProjects] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-  const [form, setForm] = useState({ name: "", jobTitle: "", department: "", phone: "", hireDate: "", baseSalary: 0, bankName: "", bankAccountNumber: "" });
+  const [form, setForm] = useState({ name: "", jobTitle: "", department: "", phone: "", hireDate: "", baseSalary: 0, bankName: "", bankAccountNumber: "", projectId: "" });
+  const [editingAssignment, setEditingAssignment] = useState<string | null>(null);
 
   async function load() {
     setLoading(true);
-    const res = await fetch("/api/employees");
-    if (res.ok) setEmployees(await res.json());
+    const [eRes, pRes] = await Promise.all([fetch("/api/employees"), fetch("/api/projects")]);
+    if (eRes.ok) setEmployees(await eRes.json());
+    if (pRes.ok) setProjects(await pRes.json());
     setLoading(false);
   }
 
@@ -54,11 +61,11 @@ export default function EmployeesPage() {
     const res = await fetch("/api/employees", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
+      body: JSON.stringify({ ...form, projectId: form.projectId || null }),
     });
     setSaving(false);
     if (!res.ok) return setError(t.err);
-    setForm({ name: "", jobTitle: "", department: "", phone: "", hireDate: "", baseSalary: 0, bankName: "", bankAccountNumber: "" });
+    setForm({ name: "", jobTitle: "", department: "", phone: "", hireDate: "", baseSalary: 0, bankName: "", bankAccountNumber: "", projectId: "" });
     setShowForm(false);
     load();
   }
@@ -72,8 +79,19 @@ export default function EmployeesPage() {
     load();
   }
 
+  async function updateAssignment(empId: string, projectId: string) {
+    await fetch(`/api/employees/${empId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ projectId: projectId || null }),
+    });
+    setEditingAssignment(null);
+    load();
+  }
+
   const localeCode = locale === "ar" ? "ar-EG" : "en-US";
   const currency = locale === "ar" ? "ج.م" : "EGP";
+  const activeProjects = projects.filter((p) => p.status !== "CLOSED");
 
   return (
     <AppShell
@@ -100,12 +118,19 @@ export default function EmployeesPage() {
             <input required type="number" step="0.01" value={form.baseSalary} onChange={(e) => setForm({ ...form, baseSalary: Number(e.target.value) })} className="w-full border rounded-xl px-3 py-2" />
           </div>
           <div>
-            <label className="text-sm text-neutral-600 block mb-1">{locale === "ar" ? "اسم البنك" : "Bank Name"}</label>
+            <label className="text-sm text-neutral-600 block mb-1">{t.bankName}</label>
             <input value={form.bankName} onChange={(e) => setForm({ ...form, bankName: e.target.value })} className="w-full border rounded-xl px-3 py-2" />
           </div>
           <div>
-            <label className="text-sm text-neutral-600 block mb-1">{locale === "ar" ? "رقم الحساب البنكي" : "Bank Account Number"}</label>
+            <label className="text-sm text-neutral-600 block mb-1">{t.bankAccount}</label>
             <input value={form.bankAccountNumber} onChange={(e) => setForm({ ...form, bankAccountNumber: e.target.value })} className="w-full border rounded-xl px-3 py-2" />
+          </div>
+          <div>
+            <label className="text-sm text-neutral-600 block mb-1">{t.assignment}</label>
+            <select value={form.projectId} onChange={(e) => setForm({ ...form, projectId: e.target.value })} className="w-full border rounded-xl px-3 py-2">
+              <option value="">{t.headOffice}</option>
+              {activeProjects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+            </select>
           </div>
           {error && <p className="text-danger text-sm lg:col-span-3">{error}</p>}
           <button disabled={saving} className="bg-primary text-white rounded-xl px-4 py-2 text-sm font-medium lg:col-span-3">{t.save}</button>
@@ -120,19 +145,38 @@ export default function EmployeesPage() {
               <th className="p-3 font-medium">{t.thJobTitle}</th>
               <th className="p-3 font-medium">{t.thDepartment}</th>
               <th className="p-3 font-medium">{t.thSalary}</th>
+              <th className="p-3 font-medium">{t.thAssignment}</th>
               <th className="p-3 font-medium">{t.thStatus}</th>
               <th className="p-3 font-medium"></th>
             </tr>
           </thead>
           <tbody>
-            {loading && <tr><td className="p-4 text-neutral-400" colSpan={6}>{t.loading}</td></tr>}
-            {!loading && employees.length === 0 && <tr><td className="p-4 text-neutral-400" colSpan={6}>{t.empty}</td></tr>}
+            {loading && <tr><td className="p-4 text-neutral-400" colSpan={7}>{t.loading}</td></tr>}
+            {!loading && employees.length === 0 && <tr><td className="p-4 text-neutral-400" colSpan={7}>{t.empty}</td></tr>}
             {employees.map((e) => (
               <tr key={e.id} className="border-t">
                 <td className="p-3 font-medium">{e.name}</td>
                 <td className="p-3">{e.jobTitle}</td>
                 <td className="p-3">{e.department || "—"}</td>
                 <td className="p-3">{Number(e.baseSalary).toLocaleString(localeCode)} {currency}</td>
+                <td className="p-3">
+                  {editingAssignment === e.id ? (
+                    <select
+                      autoFocus
+                      defaultValue={e.projectId ?? ""}
+                      onChange={(ev) => updateAssignment(e.id, ev.target.value)}
+                      onBlur={() => setEditingAssignment(null)}
+                      className="border rounded-lg px-2 py-1 text-xs"
+                    >
+                      <option value="">{t.headOffice}</option>
+                      {activeProjects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                    </select>
+                  ) : (
+                    <button onClick={() => setEditingAssignment(e.id)} className="text-xs text-primary hover:underline text-right">
+                      {e.project ? e.project.name : t.headOffice.split(" (")[0]}
+                    </button>
+                  )}
+                </td>
                 <td className="p-3">
                   <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${e.isActive ? "bg-success/10 text-success" : "bg-neutral-100 text-neutral-500"}`}>
                     {e.isActive ? t.active : t.inactive}

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Briefcase, Users, HandCoins, Settings, UserCog, FileBarChart, FileSignature, Truck, ShoppingCart, Warehouse, HardHat, IdCard, Wallet, CalendarCheck, ChevronDown, Users2, FileText, HandCoins as Coins2, ShieldAlert, Plane, Landmark, Clock3, MinusCircle, Banknote } from "lucide-react";
+import { LayoutDashboard, Briefcase, Users, HandCoins, Settings, UserCog, FileBarChart, FileSignature, Truck, ShoppingCart, Warehouse, HardHat, IdCard, Wallet, CalendarCheck, ChevronDown, Users2, FileText, HandCoins as Coins2, ShieldAlert, Plane, Landmark, Clock3, MinusCircle, Banknote, Building2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const items = [
@@ -31,6 +31,7 @@ const hrItems = [
   { href: "/hr/advances", label: "السلف", labelEn: "Advances", icon: Landmark },
   { href: "/hr/penalties", label: "الجزاءات", labelEn: "Penalties", icon: ShieldAlert },
   { href: "/hr/leaves", label: "الإجازات", labelEn: "Leaves", icon: Plane },
+  { href: "/hr/head-office-expenses", label: "مصروفات المكتب الرئيسي", labelEn: "Head Office Expenses", icon: Building2 },
 ];
 
 // Payroll — تشغيل الرواتب الشهرية (كل البنود دي جوه صفحة الرواتب نفسها)

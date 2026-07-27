@@ -16,6 +16,7 @@ const employeeSchema = z.object({
   baseSalary: z.number().positive(),
   bankName: z.string().optional(),
   bankAccountNumber: z.string().optional(),
+  projectId: z.string().optional().nullable(), // فاضي/null = المكتب الرئيسي
   notes: z.string().optional(),
 });
 
@@ -23,7 +24,10 @@ export async function GET() {
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const employees = await prisma.employee.findMany({ orderBy: { createdAt: "desc" } });
+  const employees = await prisma.employee.findMany({
+    include: { project: { select: { id: true, name: true, code: true } } },
+    orderBy: { createdAt: "desc" },
+  });
   return NextResponse.json(employees);
 }
 
@@ -39,7 +43,11 @@ export async function POST(req: Request) {
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
 
   const employee = await prisma.employee.create({
-    data: { ...parsed.data, hireDate: new Date(parsed.data.hireDate) },
+    data: {
+      ...parsed.data,
+      hireDate: new Date(parsed.data.hireDate),
+      projectId: parsed.data.projectId || null,
+    },
   });
 
   await logAudit({

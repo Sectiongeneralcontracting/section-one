@@ -26,7 +26,9 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       isActive: body.isActive ?? undefined,
       bankName: body.bankName ?? undefined,
       bankAccountNumber: body.bankAccountNumber ?? undefined,
+      projectId: body.projectId !== undefined ? (body.projectId || null) : undefined,
     },
+    include: { project: { select: { id: true, name: true, code: true } } },
   });
 
   await logAudit({

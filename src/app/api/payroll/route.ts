@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { logAudit, notifyAdmins } from "@/lib/audit";
 import { computeNetSalary, computeAbsenceDeduction } from "@/lib/payroll";
+import { distributeExpenseAcrossOpenProjects } from "@/lib/expense-distribution";
 
 const genSchema = z.object({
   employeeId: z.string(),
@@ -71,7 +72,9 @@ export async function POST(req: Request) {
   const totalDeductions = parsed.data.extraDeductions + absenceDeduction + advancesTotal + penaltiesTotal;
   const netSalary = computeNetSalary(Number(employee.baseSalary), parsed.data.allowances, totalDeductions, parsed.data.overtimeAmount);
 
-  const record = await prisma.$transaction(async (tx) => {
+  let record;
+  try {
+    record = await prisma.$transaction(async (tx) => {
     const created = await tx.payrollRecord.create({
       data: {
         employeeId: parsed.data.employeeId,
@@ -90,8 +93,33 @@ export async function POST(req: Request) {
         data: { deducted: true },
       });
     }
+
+    // تحميل تكلفة الراتب على المشروع — مباشرة لو الموظف مخصص لمشروع، أو موزّعة على المشاريع المفتوحة لو مخصص للمكتب الرئيسي
+    const costDescription = `راتب ${employee.name} — ${parsed.data.month}`;
+    if (employee.projectId) {
+      await tx.expense.create({
+        data: {
+          projectId: employee.projectId,
+          category: "LABOR",
+          amount: netSalary,
+          description: costDescription,
+          date: to,
+        },
+      });
+    } else {
+      await distributeExpenseAcrossOpenProjects(tx, {
+        amount: netSalary,
+        category: "ADMINISTRATIVE",
+        description: `${costDescription} (موظف مكتب رئيسي — موزّع حسب قيمة المشاريع)`,
+        date: to,
+      });
+    }
+
     return created;
   });
+  } catch (err: any) {
+    return NextResponse.json({ error: err.message ?? "تعذر توليد الراتب" }, { status: 400 });
+  }
 
   await logAudit({
     userId: (session.user as any).id,
