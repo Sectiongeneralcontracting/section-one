@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Briefcase, Users, HandCoins, Settings, UserCog, FileBarChart, FileSignature, Truck, ShoppingCart, Warehouse, HardHat, IdCard, Wallet, CalendarCheck, ChevronDown, Users2, FileText, HandCoins as Coins2, ShieldAlert, Plane, Landmark, Clock3, MinusCircle, Banknote, Building2 } from "lucide-react";
+import { LayoutDashboard, Briefcase, Users, HandCoins, Settings, UserCog, FileBarChart, FileSignature, Truck, ShoppingCart, Warehouse, HardHat, IdCard, Wallet, CalendarCheck, ChevronDown, Users2, FileText, HandCoins as Coins2, ShieldAlert, Plane, Landmark, Clock3, MinusCircle, Banknote, Building2, ClipboardList } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const items = [
@@ -18,6 +18,7 @@ const items = [
   { href: "/inventory", label: "المخازن", labelEn: "Inventory", icon: Warehouse, module: "inventory" },
   { href: "/equipment", label: "المعدات", labelEn: "Equipment", icon: HardHat, module: "equipment" },
   { href: "/contractors", label: "مقاولو الباطن", labelEn: "Contractors", icon: HardHat, module: "contractors" },
+  { href: "/site-reports", label: "إدارة الموقع", labelEn: "Site Management", icon: ClipboardList, module: "site-reports" },
   { href: "/reports", label: "التقارير", labelEn: "Reports", icon: FileBarChart, module: "reports" },
   { href: "/users", label: "المستخدمون", labelEn: "Users", icon: UserCog, module: "users" },
   { href: "/settings", label: "الإعدادات", labelEn: "Settings", icon: Settings, module: "settings" },

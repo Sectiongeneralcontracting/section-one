@@ -14,6 +14,7 @@ export const MODULES: ModuleDef[] = [
   { key: "inventory", label: "المخازن", labelEn: "Inventory", href: "/inventory" },
   { key: "equipment", label: "المعدات", labelEn: "Equipment", href: "/equipment" },
   { key: "contractors", label: "مقاولو الباطن", labelEn: "Contractors", href: "/contractors" },
+  { key: "site-reports", label: "إدارة الموقع", labelEn: "Site Management", href: "/site-reports" },
   { key: "employees", label: "الموظفون", labelEn: "Employees", href: "/employees" },
   { key: "hr-extra", label: "شؤون الموظفين (عقود/سلف/جزاءات/إجازات)", labelEn: "HR (contracts/advances/penalties/leaves)", href: "/hr" },
   { key: "attendance", label: "الحضور والانصراف", labelEn: "Attendance", href: "/attendance" },
@@ -39,8 +40,8 @@ export const ALL_ROLES = Object.keys(ROLE_LABELS);
 // صلاحيات افتراضية منطقية لكل دور جديد — بتتحط أول مرة بس، وبعدين الأدمن يقدر يعدّلها من الإعدادات
 export const DEFAULT_PERMISSIONS: Record<string, { view: string[]; edit: string[] }> = {
   SITE_ENGINEER: {
-    view: ["dashboard", "projects", "contracts", "equipment", "inventory", "contractors", "attendance"],
-    edit: ["projects", "attendance"],
+    view: ["dashboard", "projects", "contracts", "equipment", "inventory", "contractors", "attendance", "site-reports"],
+    edit: ["projects", "attendance", "site-reports"],
   },
   ACCOUNTANT: {
     view: ["dashboard", "projects", "clients", "suppliers", "purchase-orders", "payroll", "reports", "head-office-expenses"],
