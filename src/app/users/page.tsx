@@ -3,15 +3,10 @@
 import { useEffect, useState } from "react";
 import { AppShell } from "@/components/layout/app-shell";
 import { useLocale } from "@/lib/use-locale";
+import { ROLE_LABELS, ALL_ROLES } from "@/lib/modules";
 import { Plus, X } from "lucide-react";
 
 type UserRow = { id: string; name: string; email: string; role: string; isActive: boolean };
-
-const roleLabels: Record<string, { ar: string; en: string }> = {
-  ADMIN: { ar: "مدير النظام", en: "Admin" },
-  MANAGER: { ar: "مدير", en: "Manager" },
-  VIEWER: { ar: "مشاهد", en: "Viewer" },
-};
 
 const dict = {
   ar: {
@@ -106,9 +101,7 @@ export default function UsersPage() {
           <div>
             <label className="text-sm text-neutral-600 block mb-1">{t.role}</label>
             <select value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })} className="w-full border rounded-xl px-3 py-2">
-              <option value="ADMIN">{roleLabels.ADMIN[locale]}</option>
-              <option value="MANAGER">{roleLabels.MANAGER[locale]}</option>
-              <option value="VIEWER">{roleLabels.VIEWER[locale]}</option>
+              {ALL_ROLES.map((r) => <option key={r} value={r}>{ROLE_LABELS[r][locale]}</option>)}
             </select>
           </div>
           {error && <p className="text-danger text-sm lg:col-span-4">{error}</p>}
@@ -137,7 +130,7 @@ export default function UsersPage() {
               <tr key={u.id} className="border-t">
                 <td className="p-3 font-medium">{u.name}</td>
                 <td className="p-3">{u.email}</td>
-                <td className="p-3">{roleLabels[u.role]?.[locale]}</td>
+                <td className="p-3">{ROLE_LABELS[u.role]?.[locale]}</td>
                 <td className="p-3">
                   <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${u.isActive ? "bg-success/10 text-success" : "bg-neutral-100 text-neutral-500"}`}>
                     {u.isActive ? t.active : t.inactive}

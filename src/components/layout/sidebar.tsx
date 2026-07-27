@@ -8,54 +8,69 @@ import { LayoutDashboard, Briefcase, Users, HandCoins, Settings, UserCog, FileBa
 import { cn } from "@/lib/utils";
 
 const items = [
-  { href: "/dashboard", label: "الرئيسية", labelEn: "Dashboard", icon: LayoutDashboard },
-  { href: "/projects", label: "المشاريع", labelEn: "Projects", icon: Briefcase },
-  { href: "/contracts", label: "العقود", labelEn: "Contracts", icon: FileSignature },
-  { href: "/clients", label: "العملاء", labelEn: "Clients", icon: Users },
-  { href: "/partners", label: "الشركاء", labelEn: "Partners", icon: HandCoins },
-  { href: "/suppliers", label: "الموردون", labelEn: "Suppliers", icon: Truck },
-  { href: "/purchase-orders", label: "أوامر الشراء", labelEn: "Purchase Orders", icon: ShoppingCart },
-  { href: "/inventory", label: "المخازن", labelEn: "Inventory", icon: Warehouse },
-  { href: "/equipment", label: "المعدات", labelEn: "Equipment", icon: HardHat },
-  { href: "/contractors", label: "مقاولو الباطن", labelEn: "Contractors", icon: HardHat },
-  { href: "/reports", label: "التقارير", labelEn: "Reports", icon: FileBarChart },
-  { href: "/users", label: "المستخدمون", labelEn: "Users", icon: UserCog },
-  { href: "/settings", label: "الإعدادات", labelEn: "Settings", icon: Settings },
+  { href: "/dashboard", label: "الرئيسية", labelEn: "Dashboard", icon: LayoutDashboard, module: "dashboard" },
+  { href: "/projects", label: "المشاريع", labelEn: "Projects", icon: Briefcase, module: "projects" },
+  { href: "/contracts", label: "العقود", labelEn: "Contracts", icon: FileSignature, module: "contracts" },
+  { href: "/clients", label: "العملاء", labelEn: "Clients", icon: Users, module: "clients" },
+  { href: "/partners", label: "الشركاء", labelEn: "Partners", icon: HandCoins, module: "partners" },
+  { href: "/suppliers", label: "الموردون", labelEn: "Suppliers", icon: Truck, module: "suppliers" },
+  { href: "/purchase-orders", label: "أوامر الشراء", labelEn: "Purchase Orders", icon: ShoppingCart, module: "purchase-orders" },
+  { href: "/inventory", label: "المخازن", labelEn: "Inventory", icon: Warehouse, module: "inventory" },
+  { href: "/equipment", label: "المعدات", labelEn: "Equipment", icon: HardHat, module: "equipment" },
+  { href: "/contractors", label: "مقاولو الباطن", labelEn: "Contractors", icon: HardHat, module: "contractors" },
+  { href: "/reports", label: "التقارير", labelEn: "Reports", icon: FileBarChart, module: "reports" },
+  { href: "/users", label: "المستخدمون", labelEn: "Users", icon: UserCog, module: "users" },
+  { href: "/settings", label: "الإعدادات", labelEn: "Settings", icon: Settings, module: "settings" },
 ];
 
 // HR — بيانات وشؤون الموظفين
 const hrItems = [
-  { href: "/employees", label: "الموظفين", labelEn: "Employees", icon: IdCard },
-  { href: "/hr/contracts", label: "العقود", labelEn: "Contracts", icon: FileText },
-  { href: "/attendance", label: "الحضور", labelEn: "Attendance", icon: CalendarCheck },
-  { href: "/employees", label: "المرتبات", labelEn: "Salaries", icon: Coins2 },
-  { href: "/hr/advances", label: "السلف", labelEn: "Advances", icon: Landmark },
-  { href: "/hr/penalties", label: "الجزاءات", labelEn: "Penalties", icon: ShieldAlert },
-  { href: "/hr/leaves", label: "الإجازات", labelEn: "Leaves", icon: Plane },
-  { href: "/hr/head-office-expenses", label: "مصروفات المكتب الرئيسي", labelEn: "Head Office Expenses", icon: Building2 },
+  { href: "/employees", label: "الموظفين", labelEn: "Employees", icon: IdCard, module: "employees" },
+  { href: "/hr/contracts", label: "العقود", labelEn: "Contracts", icon: FileText, module: "hr-extra" },
+  { href: "/attendance", label: "الحضور", labelEn: "Attendance", icon: CalendarCheck, module: "attendance" },
+  { href: "/employees", label: "المرتبات", labelEn: "Salaries", icon: Coins2, module: "employees" },
+  { href: "/hr/advances", label: "السلف", labelEn: "Advances", icon: Landmark, module: "hr-extra" },
+  { href: "/hr/penalties", label: "الجزاءات", labelEn: "Penalties", icon: ShieldAlert, module: "hr-extra" },
+  { href: "/hr/leaves", label: "الإجازات", labelEn: "Leaves", icon: Plane, module: "hr-extra" },
+  { href: "/hr/head-office-expenses", label: "مصروفات المكتب الرئيسي", labelEn: "Head Office Expenses", icon: Building2, module: "head-office-expenses" },
 ];
 
 // Payroll — تشغيل الرواتب الشهرية (كل البنود دي جوه صفحة الرواتب نفسها)
 const payrollItems = [
-  { href: "/payroll", label: "الرواتب", labelEn: "Payroll", icon: Wallet },
-  { href: "/payroll", label: "البدلات", labelEn: "Allowances", icon: Coins2 },
-  { href: "/payroll", label: "الإضافي", labelEn: "Overtime", icon: Clock3 },
-  { href: "/payroll", label: "الاستقطاعات", labelEn: "Deductions", icon: MinusCircle },
-  { href: "/payroll", label: "تحويل البنك", labelEn: "Bank Transfer", icon: Banknote },
+  { href: "/payroll", label: "الرواتب", labelEn: "Payroll", icon: Wallet, module: "payroll" },
+  { href: "/payroll", label: "البدلات", labelEn: "Allowances", icon: Coins2, module: "payroll" },
+  { href: "/payroll", label: "الإضافي", labelEn: "Overtime", icon: Clock3, module: "payroll" },
+  { href: "/payroll", label: "الاستقطاعات", labelEn: "Deductions", icon: MinusCircle, module: "payroll" },
+  { href: "/payroll", label: "تحويل البنك", labelEn: "Bank Transfer", icon: Banknote, module: "payroll" },
 ];
 
 export function Sidebar() {
   const pathname = usePathname();
   const [locale, setLocale] = useState<"ar" | "en">("ar");
-  const hrActive = hrItems.some((i) => pathname?.startsWith(i.href));
-  const payrollActive = pathname?.startsWith("/payroll") ?? false;
-  const [hrOpen, setHrOpen] = useState(hrActive);
-  const [payrollOpen, setPayrollOpen] = useState(payrollActive);
+  const [perms, setPerms] = useState<Record<string, { canView: boolean; canEdit: boolean }> | null>(null);
 
   useEffect(() => {
     const match = document.cookie.match(/(?:^|; )locale=(ar|en)/);
     setLocale((match?.[1] as "ar" | "en") ?? "ar");
+    fetch("/api/permissions/me")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => setPerms(data?.permissions ?? null));
   }, []);
+
+  // لحد ما الصلاحيات توصل، اعرض كل حاجة (تجنب وميض/اختفاء مؤقت)؛ الأدمن دايمًا كل حاجة true
+  function canView(moduleKey: string) {
+    if (!perms) return true;
+    return perms[moduleKey]?.canView ?? false;
+  }
+
+  const visibleItems = items.filter((i) => canView(i.module));
+  const visibleHrItems = hrItems.filter((i) => canView(i.module));
+  const visiblePayrollItems = payrollItems.filter((i) => canView(i.module));
+
+  const hrActive = visibleHrItems.some((i) => pathname?.startsWith(i.href));
+  const payrollActive = pathname?.startsWith("/payroll") ?? false;
+  const [hrOpen, setHrOpen] = useState(hrActive);
+  const [payrollOpen, setPayrollOpen] = useState(payrollActive);
 
   useEffect(() => {
     if (hrActive) setHrOpen(true);
@@ -65,6 +80,9 @@ export function Sidebar() {
     if (payrollActive) setPayrollOpen(true);
   }, [payrollActive]);
 
+  const firstHalf = visibleItems.filter((i) => i.module !== "reports" && i.module !== "users" && i.module !== "settings");
+  const secondHalf = visibleItems.filter((i) => i.module === "reports" || i.module === "users" || i.module === "settings");
+
   return (
     <aside className="w-64 shrink-0 bg-steel-dark text-white min-h-screen p-4 hidden md:block overflow-y-auto">
       <div className="flex items-center gap-2 mb-1 px-2">
@@ -73,7 +91,7 @@ export function Sidebar() {
       </div>
       <p className="text-[10px] text-white/50 px-2 mb-7 tracking-wide">CONSTRUCTION MANAGEMENT PLATFORM</p>
       <nav className="space-y-1">
-        {items.slice(0, 8).map((item) => {
+        {firstHalf.map((item) => {
           const active = pathname?.startsWith(item.href);
           return (
             <Link
@@ -91,72 +109,80 @@ export function Sidebar() {
         })}
 
         {/* HR */}
-        <button
-          onClick={() => setHrOpen((v) => !v)}
-          className={cn(
-            "w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm transition",
-            hrActive ? "bg-primary/90 font-medium" : "hover:bg-white/10 text-white/85"
-          )}
-        >
-          <Users2 size={18} />
-          <span className="flex-1 text-right">HR</span>
-          <ChevronDown size={14} className={cn("transition-transform", hrOpen && "rotate-180")} />
-        </button>
-        {hrOpen && (
-          <div className="pr-4 space-y-1">
-            {hrItems.map((item) => {
-              const active = pathname?.startsWith(item.href);
-              return (
-                <Link
-                  key={item.label}
-                  href={item.href}
-                  className={cn(
-                    "flex items-center gap-3 px-3 py-2 rounded-xl text-sm transition",
-                    active ? "bg-primary/90 font-medium" : "hover:bg-white/10 text-white/70"
-                  )}
-                >
-                  <item.icon size={16} />
-                  {locale === "en" ? item.labelEn : item.label}
-                </Link>
-              );
-            })}
-          </div>
+        {visibleHrItems.length > 0 && (
+          <>
+            <button
+              onClick={() => setHrOpen((v) => !v)}
+              className={cn(
+                "w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm transition",
+                hrActive ? "bg-primary/90 font-medium" : "hover:bg-white/10 text-white/85"
+              )}
+            >
+              <Users2 size={18} />
+              <span className="flex-1 text-right">HR</span>
+              <ChevronDown size={14} className={cn("transition-transform", hrOpen && "rotate-180")} />
+            </button>
+            {hrOpen && (
+              <div className="pr-4 space-y-1">
+                {visibleHrItems.map((item) => {
+                  const active = pathname?.startsWith(item.href);
+                  return (
+                    <Link
+                      key={item.label}
+                      href={item.href}
+                      className={cn(
+                        "flex items-center gap-3 px-3 py-2 rounded-xl text-sm transition",
+                        active ? "bg-primary/90 font-medium" : "hover:bg-white/10 text-white/70"
+                      )}
+                    >
+                      <item.icon size={16} />
+                      {locale === "en" ? item.labelEn : item.label}
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
+          </>
         )}
 
         {/* Payroll */}
-        <button
-          onClick={() => setPayrollOpen((v) => !v)}
-          className={cn(
-            "w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm transition",
-            payrollActive ? "bg-primary/90 font-medium" : "hover:bg-white/10 text-white/85"
-          )}
-        >
-          <Wallet size={18} />
-          <span className="flex-1 text-right">Payroll</span>
-          <ChevronDown size={14} className={cn("transition-transform", payrollOpen && "rotate-180")} />
-        </button>
-        {payrollOpen && (
-          <div className="pr-4 space-y-1">
-            {payrollItems.map((item) => {
-              const active = pathname?.startsWith(item.href);
-              return (
-                <Link
-                  key={item.label}
-                  href={item.href}
-                  className={cn(
-                    "flex items-center gap-3 px-3 py-2 rounded-xl text-sm transition",
-                    active ? "bg-primary/90 font-medium" : "hover:bg-white/10 text-white/70"
-                  )}
-                >
-                  <item.icon size={16} />
-                  {locale === "en" ? item.labelEn : item.label}
-                </Link>
-              );
-            })}
-          </div>
+        {visiblePayrollItems.length > 0 && (
+          <>
+            <button
+              onClick={() => setPayrollOpen((v) => !v)}
+              className={cn(
+                "w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm transition",
+                payrollActive ? "bg-primary/90 font-medium" : "hover:bg-white/10 text-white/85"
+              )}
+            >
+              <Wallet size={18} />
+              <span className="flex-1 text-right">Payroll</span>
+              <ChevronDown size={14} className={cn("transition-transform", payrollOpen && "rotate-180")} />
+            </button>
+            {payrollOpen && (
+              <div className="pr-4 space-y-1">
+                {visiblePayrollItems.map((item) => {
+                  const active = pathname?.startsWith(item.href);
+                  return (
+                    <Link
+                      key={item.label}
+                      href={item.href}
+                      className={cn(
+                        "flex items-center gap-3 px-3 py-2 rounded-xl text-sm transition",
+                        active ? "bg-primary/90 font-medium" : "hover:bg-white/10 text-white/70"
+                      )}
+                    >
+                      <item.icon size={16} />
+                      {locale === "en" ? item.labelEn : item.label}
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
+          </>
         )}
 
-        {items.slice(8).map((item) => {
+        {secondHalf.map((item) => {
           const active = pathname?.startsWith(item.href);
           return (
             <Link

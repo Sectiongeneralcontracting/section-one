@@ -22,6 +22,23 @@ enum Role {
   ADMIN
   MANAGER
   VIEWER
+  SITE_ENGINEER      // مهندس موقع
+  ACCOUNTANT         // محاسب
+  FINANCE_MANAGER    // مدير مالي
+  HR_MANAGER         // مدير الموارد البشرية
+}
+
+// صلاحية كل دور وظيفي على كل موديول في النظام — قابلة للتحكم من الإعدادات (Admin فقط)
+// ADMIN دايمًا له صلاحية كاملة على كل حاجة بغض النظر عن الصفوف هنا (bypass)
+model Permission {
+  id       String  @id @default(cuid())
+  role     Role
+  module   String  // مفتاح الموديول، زي "projects" أو "payroll" أو "settings"
+  canView  Boolean @default(false)
+  canEdit  Boolean @default(false)
+
+  @@unique([role, module])
+  @@map("permissions")
 }
 
 model User {

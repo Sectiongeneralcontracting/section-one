@@ -1,13 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Fragment } from "react";
 import { AppShell } from "@/components/layout/app-shell";
 import { useLocale } from "@/lib/use-locale";
+import { ROLE_LABELS } from "@/lib/modules";
 import { Sun, Moon } from "lucide-react";
 
 const dict = {
   ar: {
-    title: "الإعدادات", tabGeneral: "عام", tabAppearance: "المظهر",
+    title: "الإعدادات", tabGeneral: "عام", tabAppearance: "المظهر", tabPermissions: "الصلاحيات",
+    permissionsTitle: "صلاحيات الأدوار الوظيفية",
+    permissionsDesc: "تحكم في كل دور وظيفي يقدر يشوف إيه ويعدّل إيه في النظام. مدير النظام (Admin) دايمًا له صلاحية كاملة على كل حاجة تلقائيًا.",
+    view: "عرض", edit: "تعديل", savePermissions: "حفظ الصلاحيات", savingPermissions: "جارٍ الحفظ...",
+    permissionsSaved: "تم حفظ الصلاحيات ✓", errPermissions: "تعذر حفظ الصلاحيات",
     appearanceTitle: "لون النظام", appearanceDesc: "اختر مظهر النظام: فاتح (أبيض) أو غامق (أسود) بألوان مريحة للعين.",
     light: "فاتح (أبيض)", dark: "غامق (أسود)",
     companyTitle: "بيانات الشركة (تظهر في كل التقارير)",
@@ -35,7 +40,11 @@ const dict = {
     errImport: "تعذر الاستيراد",
   },
   en: {
-    title: "Settings", tabGeneral: "General", tabAppearance: "Appearance",
+    title: "Settings", tabGeneral: "General", tabAppearance: "Appearance", tabPermissions: "Permissions",
+    permissionsTitle: "Role Permissions",
+    permissionsDesc: "Control what each functional role can view and edit in the system. Admin always has full access to everything automatically.",
+    view: "View", edit: "Edit", savePermissions: "Save Permissions", savingPermissions: "Saving...",
+    permissionsSaved: "Permissions saved ✓", errPermissions: "Failed to save permissions",
     appearanceTitle: "System Theme", appearanceDesc: "Choose the system appearance: light (white) or dark (black) with comfortable colors.",
     light: "Light", dark: "Dark",
     companyTitle: "Company Info (shown on all reports)",
@@ -67,7 +76,10 @@ const dict = {
 export default function SettingsPage() {
   const locale = useLocale();
   const t = dict[locale];
-  const [tab, setTab] = useState<"general" | "appearance">("general");
+  const [tab, setTab] = useState<"general" | "appearance" | "permissions">("general");
+  const [permMatrix, setPermMatrix] = useState<any>(null);
+  const [permSaving, setPermSaving] = useState(false);
+  const [permSaved, setPermSaved] = useState("");
   const [company, setCompany] = useState<any>(null);
   const [settings, setSettings] = useState<any>(null);
   const [savedMsg, setSavedMsg] = useState("");
@@ -85,6 +97,45 @@ export default function SettingsPage() {
     const match = document.cookie.match(/(?:^|; )theme=(light|dark)/);
     setTheme((match?.[1] as "light" | "dark") ?? "light");
   }, []);
+
+  useEffect(() => {
+    if (tab === "permissions" && !permMatrix) {
+      fetch("/api/permissions").then((r) => (r.ok ? r.json() : null)).then((d) => d && setPermMatrix(d));
+    }
+  }, [tab]);
+
+  function togglePerm(role: string, moduleKey: string, field: "canView" | "canEdit") {
+    setPermMatrix((prev: any) => {
+      const next = { ...prev, matrix: { ...prev.matrix } };
+      next.matrix[role] = { ...next.matrix[role] };
+      const cell = { ...next.matrix[role][moduleKey], [field]: !next.matrix[role][moduleKey][field] };
+      // مينفعش تدي صلاحية تعديل من غير صلاحية عرض
+      if (field === "canEdit" && cell.canEdit) cell.canView = true;
+      if (field === "canView" && !cell.canView) cell.canEdit = false;
+      next.matrix[role][moduleKey] = cell;
+      return next;
+    });
+  }
+
+  async function savePermissions() {
+    setPermSaving(true);
+    setPermSaved("");
+    const updates: any[] = [];
+    for (const role of permMatrix.roles) {
+      for (const m of permMatrix.modules) {
+        const cell = permMatrix.matrix[role][m.key];
+        updates.push({ role, module: m.key, canView: cell.canView, canEdit: cell.canEdit });
+      }
+    }
+    const res = await fetch("/api/permissions", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ updates }),
+    });
+    setPermSaving(false);
+    if (!res.ok) return alert(t.errPermissions);
+    setPermSaved(t.permissionsSaved);
+  }
 
   function applyTheme(next: "light" | "dark") {
     document.cookie = `theme=${next}; path=/; max-age=31536000`;
@@ -210,7 +261,71 @@ export default function SettingsPage() {
         >
           {t.tabAppearance}
         </button>
+        <button
+          onClick={() => setTab("permissions")}
+          className={`text-sm px-4 py-2 rounded-xl ${tab === "permissions" ? "bg-primary text-white" : "border"}`}
+        >
+          {t.tabPermissions}
+        </button>
       </div>
+
+      {tab === "permissions" && (
+        <div className="card space-y-4 overflow-x-auto">
+          <h2 className="font-semibold">{t.permissionsTitle}</h2>
+          <p className="text-sm text-neutral-500">{t.permissionsDesc}</p>
+          {!permMatrix ? (
+            <p className="text-sm text-neutral-400">...</p>
+          ) : (
+            <>
+              <table className="w-full text-sm border-collapse min-w-[900px]">
+                <thead>
+                  <tr>
+                    <th className="p-2 text-right border-b sticky right-0 bg-white">{locale === "ar" ? "الموديول" : "Module"}</th>
+                    {permMatrix.roles.map((role: string) => (
+                      <th key={role} className="p-2 text-center border-b" colSpan={2}>
+                        {ROLE_LABELS[role]?.[locale] ?? role}
+                      </th>
+                    ))}
+                  </tr>
+                  <tr>
+                    <th className="border-b sticky right-0 bg-white"></th>
+                    {permMatrix.roles.map((role: string) => (
+                      <Fragment key={role}>
+                        <th className="p-1 text-center border-b text-xs font-normal text-neutral-400">{t.view}</th>
+                        <th className="p-1 text-center border-b text-xs font-normal text-neutral-400">{t.edit}</th>
+                      </Fragment>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {permMatrix.modules.map((m: any) => (
+                    <tr key={m.key} className="border-b">
+                      <td className="p-2 font-medium sticky right-0 bg-white">{locale === "ar" ? m.label : m.labelEn}</td>
+                      {permMatrix.roles.map((role: string) => {
+                        const cell = permMatrix.matrix[role][m.key];
+                        return (
+                          <Fragment key={role + m.key}>
+                            <td className="p-1 text-center">
+                              <input type="checkbox" checked={cell.canView} onChange={() => togglePerm(role, m.key, "canView")} />
+                            </td>
+                            <td className="p-1 text-center">
+                              <input type="checkbox" checked={cell.canEdit} onChange={() => togglePerm(role, m.key, "canEdit")} />
+                            </td>
+                          </Fragment>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {permSaved && <p className="text-success text-sm">{permSaved}</p>}
+              <button onClick={savePermissions} disabled={permSaving} className="bg-primary text-white rounded-xl px-5 py-2 text-sm font-medium disabled:opacity-60">
+                {permSaving ? t.savingPermissions : t.savePermissions}
+              </button>
+            </>
+          )}
+        </div>
+      )}
 
       {tab === "appearance" && (
         <div className="card space-y-4">

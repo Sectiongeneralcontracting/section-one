@@ -3,18 +3,13 @@
 import { useEffect, useState } from "react";
 import { signOut } from "next-auth/react";
 import { LogOut, ChevronDown } from "lucide-react";
+import { ROLE_LABELS } from "@/lib/modules";
 
 function getLocaleCookie(): "ar" | "en" {
   if (typeof document === "undefined") return "ar";
   const match = document.cookie.match(/(?:^|; )locale=(ar|en)/);
   return (match?.[1] as "ar" | "en") ?? "ar";
 }
-
-const roleLabels: Record<string, { ar: string; en: string }> = {
-  ADMIN: { ar: "مدير النظام", en: "Admin" },
-  MANAGER: { ar: "مدير", en: "Manager" },
-  VIEWER: { ar: "مشاهد", en: "Viewer" },
-};
 
 export function UserMenu() {
   const [user, setUser] = useState<{ name: string; role: string } | null>(null);
@@ -51,7 +46,7 @@ export function UserMenu() {
           </div>
           <div className="text-right hidden sm:block">
             <p className="text-xs font-medium leading-none">{user?.name ?? "..."}</p>
-            <p className="text-[10px] text-neutral-400 mt-0.5">{user ? roleLabels[user.role]?.[locale] ?? user.role : ""}</p>
+            <p className="text-[10px] text-neutral-400 mt-0.5">{user ? ROLE_LABELS[user.role]?.[locale] ?? user.role : ""}</p>
           </div>
           <ChevronDown size={14} className="text-neutral-400" />
         </button>
