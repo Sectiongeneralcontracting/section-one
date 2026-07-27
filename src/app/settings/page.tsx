@@ -2,9 +2,65 @@
 
 import { useEffect, useState } from "react";
 import { AppShell } from "@/components/layout/app-shell";
+import { useLocale } from "@/lib/use-locale";
 import { Sun, Moon } from "lucide-react";
 
+const dict = {
+  ar: {
+    title: "الإعدادات", tabGeneral: "عام", tabAppearance: "المظهر",
+    appearanceTitle: "لون النظام", appearanceDesc: "اختر مظهر النظام: فاتح (أبيض) أو غامق (أسود) بألوان مريحة للعين.",
+    light: "فاتح (أبيض)", dark: "غامق (أسود)",
+    companyTitle: "بيانات الشركة (تظهر في كل التقارير)",
+    companyName: "اسم الشركة", phone: "الهاتف", email: "البريد الإلكتروني", website: "الموقع الإلكتروني",
+    taxNumber: "الرقم الضريبي", commercialReg: "السجل التجاري", address: "العنوان",
+    saveCompany: "حفظ بيانات الشركة",
+    systemSettingsTitle: "إعدادات النظام", insuranceRate: "نسبة التأمينات %", taxRate: "نسبة الضريبة %",
+    currency: "العملة", defaultLanguage: "اللغة الافتراضية", arabic: "العربية", english: "English",
+    saveSettings: "حفظ إعدادات النظام",
+    backupTitle: "النسخ الاحتياطي والاستعادة",
+    backupDesc: "تصدير نسخة كاملة من قاعدة البيانات كملف JSON، أو استعادة نسخة سابقة (سيتم استبدال كل البيانات الحالية).",
+    exportBackup: "تصدير نسخة احتياطية", restoreBackup: "استعادة نسخة احتياطية", restoring: "جارٍ الاستعادة...",
+    importTitle: "استيراد عقود رايه فودز (مرة واحدة)",
+    importDesc: "استيراد 10 مشاريع وعقود كاملة (بجداول الكميات) لشركة رايه فودز دفعة واحدة. آمن للتشغيل أكتر من مرة — أي مشروع موجود بالفعل هيتجاهل.",
+    importBtn: "استيراد العقود العشرة", importing: "جارٍ الاستيراد...",
+    loading: "جارٍ التحميل...",
+    savedCompany: "تم حفظ بيانات الشركة ✓", savedSettings: "تم حفظ إعدادات النظام ✓",
+    errSave: "تعذر الحفظ — يتطلب صلاحية Admin", errBackup: "تعذر إنشاء النسخة الاحتياطية",
+    confirmRestore: "تحذير: استعادة نسخة احتياطية هتستبدل كل البيانات الحالية. متأكد؟",
+    restoredOk: "تم استعادة النسخة الاحتياطية بنجاح ✓", errRestore: "تعذر الاستيراد: ",
+    confirmImport: "تأكيد استيراد العقود العشرة (رايه فودز) دفعة واحدة؟ العملية آمنة وممكن تتكرر من غير تكرار البيانات.",
+    errImport: "تعذر الاستيراد",
+  },
+  en: {
+    title: "Settings", tabGeneral: "General", tabAppearance: "Appearance",
+    appearanceTitle: "System Theme", appearanceDesc: "Choose the system appearance: light (white) or dark (black) with comfortable colors.",
+    light: "Light", dark: "Dark",
+    companyTitle: "Company Info (shown on all reports)",
+    companyName: "Company Name", phone: "Phone", email: "Email", website: "Website",
+    taxNumber: "Tax Number", commercialReg: "Commercial Registry", address: "Address",
+    saveCompany: "Save Company Info",
+    systemSettingsTitle: "System Settings", insuranceRate: "Insurance Rate %", taxRate: "Tax Rate %",
+    currency: "Currency", defaultLanguage: "Default Language", arabic: "العربية", english: "English",
+    saveSettings: "Save System Settings",
+    backupTitle: "Backup & Restore",
+    backupDesc: "Export a full database backup as a JSON file, or restore a previous one (this replaces all current data).",
+    exportBackup: "Export Backup", restoreBackup: "Restore Backup", restoring: "Restoring...",
+    importTitle: "Import Raya Foodz Contracts (one-time)",
+    importDesc: "Import 10 complete projects and contracts (with BOQ) for Raya Foodz at once. Safe to run more than once — existing projects are skipped.",
+    importBtn: "Import 10 Contracts", importing: "Importing...",
+    loading: "Loading...",
+    savedCompany: "Company info saved ✓", savedSettings: "System settings saved ✓",
+    errSave: "Failed to save — requires Admin role", errBackup: "Failed to create backup",
+    confirmRestore: "Warning: restoring a backup will replace all current data. Continue?",
+    restoredOk: "Backup restored successfully ✓", errRestore: "Import failed: ",
+    confirmImport: "Confirm importing the 10 Raya Foodz contracts at once? This is safe and can be re-run without duplicating data.",
+    errImport: "Import failed",
+  },
+};
+
 export default function SettingsPage() {
+  const locale = useLocale();
+  const t = dict[locale];
   const [tab, setTab] = useState<"general" | "appearance">("general");
   const [company, setCompany] = useState<any>(null);
   const [settings, setSettings] = useState<any>(null);
@@ -29,13 +85,13 @@ export default function SettingsPage() {
   }
 
   async function importContracts() {
-    if (!confirm("تأكيد استيراد العقود العشرة (رايه فودز) دفعة واحدة؟ العملية آمنة وممكن تتكرر من غير تكرار البيانات.")) return;
+    if (!confirm(t.confirmImport)) return;
     setImporting(true);
     setImportResults(null);
     try {
       const res = await fetch("/api/admin/import-contracts", { method: "POST" });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "تعذر الاستيراد");
+      if (!res.ok) throw new Error(data.error ?? t.errImport);
       setImportResults(data);
     } catch (err: any) {
       alert(err.message);
@@ -45,7 +101,7 @@ export default function SettingsPage() {
 
   async function exportBackup() {
     const res = await fetch("/api/backup");
-    if (!res.ok) return alert("تعذر إنشاء النسخة الاحتياطية");
+    if (!res.ok) return alert(t.errBackup);
     const blob = await res.blob();
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -58,7 +114,7 @@ export default function SettingsPage() {
   async function importBackup(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (!confirm("تحذير: استعادة نسخة احتياطية هتستبدل كل البيانات الحالية. متأكد؟")) {
+    if (!confirm(t.confirmRestore)) {
       e.target.value = "";
       return;
     }
@@ -72,9 +128,9 @@ export default function SettingsPage() {
         body: JSON.stringify({ confirm: true, data: parsed.data }),
       });
       if (!res.ok) throw new Error((await res.json()).error);
-      alert("تم استعادة النسخة الاحتياطية بنجاح ✓");
+      alert(t.restoredOk);
     } catch (err: any) {
-      alert("تعذر الاستيراد: " + (err.message ?? "ملف غير صالح"));
+      alert(t.errRestore + (err.message ?? ""));
     }
     setRestoring(false);
     e.target.value = "";
@@ -88,8 +144,8 @@ export default function SettingsPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(company),
     });
-    if (!res.ok) return setError("تعذر الحفظ — يتطلب صلاحية Admin");
-    setSavedMsg("تم حفظ بيانات الشركة ✓");
+    if (!res.ok) return setError(t.errSave);
+    setSavedMsg(t.savedCompany);
   }
 
   async function saveSettings(e: React.FormEvent) {
@@ -104,39 +160,39 @@ export default function SettingsPage() {
         taxRate: Number(settings.taxRate),
       }),
     });
-    if (!res.ok) return setError("تعذر الحفظ — يتطلب صلاحية Admin");
-    setSavedMsg("تم حفظ إعدادات النظام ✓");
+    if (!res.ok) return setError(t.errSave);
+    setSavedMsg(t.savedSettings);
   }
 
   if (!company || !settings) {
     return (
-      <AppShell title="الإعدادات">
-        <p className="text-neutral-400">جارٍ التحميل...</p>
+      <AppShell title={t.title}>
+        <p className="text-neutral-400">{t.loading}</p>
       </AppShell>
     );
   }
 
   return (
-    <AppShell title="الإعدادات">
+    <AppShell title={t.title}>
       <div className="flex gap-2">
         <button
           onClick={() => setTab("general")}
           className={`text-sm px-4 py-2 rounded-xl ${tab === "general" ? "bg-primary text-white" : "border"}`}
         >
-          عام
+          {t.tabGeneral}
         </button>
         <button
           onClick={() => setTab("appearance")}
           className={`text-sm px-4 py-2 rounded-xl ${tab === "appearance" ? "bg-primary text-white" : "border"}`}
         >
-          المظهر
+          {t.tabAppearance}
         </button>
       </div>
 
       {tab === "appearance" && (
         <div className="card space-y-4">
-          <h2 className="font-semibold">لون النظام</h2>
-          <p className="text-sm text-neutral-500">اختر مظهر النظام: فاتح (أبيض) أو غامق (أسود) بألوان مريحة للعين.</p>
+          <h2 className="font-semibold">{t.appearanceTitle}</h2>
+          <p className="text-sm text-neutral-500">{t.appearanceDesc}</p>
           <div className="flex gap-4">
             <button
               onClick={() => applyTheme("light")}
@@ -145,7 +201,7 @@ export default function SettingsPage() {
               <div className="w-full h-16 rounded-lg bg-white border border-neutral-200 flex items-center justify-center">
                 <Sun size={22} className="text-warning" />
               </div>
-              <span className="text-sm font-medium">فاتح (أبيض)</span>
+              <span className="text-sm font-medium">{t.light}</span>
             </button>
             <button
               onClick={() => applyTheme("dark")}
@@ -154,7 +210,7 @@ export default function SettingsPage() {
               <div className="w-full h-16 rounded-lg bg-neutral-900 border border-neutral-700 flex items-center justify-center">
                 <Moon size={22} className="text-neutral-200" />
               </div>
-              <span className="text-sm font-medium">غامق (أسود)</span>
+              <span className="text-sm font-medium">{t.dark}</span>
             </button>
           </div>
         </div>
@@ -166,65 +222,60 @@ export default function SettingsPage() {
       {error && <p className="text-danger text-sm">{error}</p>}
 
       <form onSubmit={saveCompany} className="card space-y-4">
-        <h2 className="font-semibold">بيانات الشركة (تظهر في كل التقارير)</h2>
+        <h2 className="font-semibold">{t.companyTitle}</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Field label="اسم الشركة" value={company.name} onChange={(v) => setCompany({ ...company, name: v })} />
-          <Field label="الهاتف" value={company.phone} onChange={(v) => setCompany({ ...company, phone: v })} />
-          <Field label="البريد الإلكتروني" value={company.email} onChange={(v) => setCompany({ ...company, email: v })} />
-          <Field label="الموقع الإلكتروني" value={company.website} onChange={(v) => setCompany({ ...company, website: v })} />
-          <Field label="الرقم الضريبي" value={company.taxNumber} onChange={(v) => setCompany({ ...company, taxNumber: v })} />
-          <Field label="السجل التجاري" value={company.commercialReg} onChange={(v) => setCompany({ ...company, commercialReg: v })} />
+          <Field label={t.companyName} value={company.name} onChange={(v) => setCompany({ ...company, name: v })} />
+          <Field label={t.phone} value={company.phone} onChange={(v) => setCompany({ ...company, phone: v })} />
+          <Field label={t.email} value={company.email} onChange={(v) => setCompany({ ...company, email: v })} />
+          <Field label={t.website} value={company.website} onChange={(v) => setCompany({ ...company, website: v })} />
+          <Field label={t.taxNumber} value={company.taxNumber} onChange={(v) => setCompany({ ...company, taxNumber: v })} />
+          <Field label={t.commercialReg} value={company.commercialReg} onChange={(v) => setCompany({ ...company, commercialReg: v })} />
           <div className="sm:col-span-2">
-            <Field label="العنوان" value={company.address} onChange={(v) => setCompany({ ...company, address: v })} />
+            <Field label={t.address} value={company.address} onChange={(v) => setCompany({ ...company, address: v })} />
           </div>
         </div>
-        <button className="bg-primary text-white rounded-xl px-5 py-2 text-sm font-medium">حفظ بيانات الشركة</button>
+        <button className="bg-primary text-white rounded-xl px-5 py-2 text-sm font-medium">{t.saveCompany}</button>
       </form>
 
       <form onSubmit={saveSettings} className="card space-y-4">
-        <h2 className="font-semibold">إعدادات النظام</h2>
+        <h2 className="font-semibold">{t.systemSettingsTitle}</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Field label="نسبة التأمينات %" type="number" value={settings.insuranceRate} onChange={(v) => setSettings({ ...settings, insuranceRate: v })} />
-          <Field label="نسبة الضريبة %" type="number" value={settings.taxRate} onChange={(v) => setSettings({ ...settings, taxRate: v })} />
-          <Field label="العملة" value={settings.currency} onChange={(v) => setSettings({ ...settings, currency: v })} />
+          <Field label={t.insuranceRate} type="number" value={settings.insuranceRate} onChange={(v) => setSettings({ ...settings, insuranceRate: v })} />
+          <Field label={t.taxRate} type="number" value={settings.taxRate} onChange={(v) => setSettings({ ...settings, taxRate: v })} />
+          <Field label={t.currency} value={settings.currency} onChange={(v) => setSettings({ ...settings, currency: v })} />
           <div>
-            <label className="text-sm text-neutral-600 block mb-1">اللغة الافتراضية</label>
+            <label className="text-sm text-neutral-600 block mb-1">{t.defaultLanguage}</label>
             <select
               value={settings.defaultLanguage}
               onChange={(e) => setSettings({ ...settings, defaultLanguage: e.target.value })}
               className="w-full border rounded-xl px-3 py-2"
             >
-              <option value="ar">العربية</option>
-              <option value="en">English</option>
+              <option value="ar">{t.arabic}</option>
+              <option value="en">{t.english}</option>
             </select>
           </div>
         </div>
-        <button className="bg-primary text-white rounded-xl px-5 py-2 text-sm font-medium">حفظ إعدادات النظام</button>
+        <button className="bg-primary text-white rounded-xl px-5 py-2 text-sm font-medium">{t.saveSettings}</button>
       </form>
 
       <div className="card space-y-3">
-        <h2 className="font-semibold">النسخ الاحتياطي والاستعادة</h2>
-        <p className="text-sm text-neutral-500">
-          تصدير نسخة كاملة من قاعدة البيانات كملف JSON، أو استعادة نسخة سابقة (سيتم استبدال كل البيانات الحالية).
-        </p>
+        <h2 className="font-semibold">{t.backupTitle}</h2>
+        <p className="text-sm text-neutral-500">{t.backupDesc}</p>
         <div className="flex flex-wrap gap-3">
           <button onClick={exportBackup} className="bg-primary text-white rounded-xl px-5 py-2 text-sm font-medium">
-            تصدير نسخة احتياطية
+            {t.exportBackup}
           </button>
           <label className="border rounded-xl px-5 py-2 text-sm font-medium cursor-pointer">
-            {restoring ? "جارٍ الاستعادة..." : "استعادة نسخة احتياطية"}
+            {restoring ? t.restoring : t.restoreBackup}
             <input type="file" accept="application/json" onChange={importBackup} disabled={restoring} className="hidden" />
           </label>
         </div>
       </div>
       <div className="card space-y-3">
-        <h2 className="font-semibold">استيراد عقود رايه فودز (مرة واحدة)</h2>
-        <p className="text-sm text-neutral-500">
-          استيراد 10 مشاريع وعقود كاملة (بجداول الكميات) لشركة رايه فودز دفعة واحدة. آمن للتشغيل أكتر من مرة — أي مشروع
-          موجود بالفعل هيتجاهل.
-        </p>
+        <h2 className="font-semibold">{t.importTitle}</h2>
+        <p className="text-sm text-neutral-500">{t.importDesc}</p>
         <button onClick={importContracts} disabled={importing} className="bg-primary text-white rounded-xl px-5 py-2 text-sm font-medium disabled:opacity-60">
-          {importing ? "جارٍ الاستيراد..." : "استيراد العقود العشرة"}
+          {importing ? t.importing : t.importBtn}
         </button>
         {importResults && (
           <div className="text-sm space-y-1 border-t pt-3 mt-2">

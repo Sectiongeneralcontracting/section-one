@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { signOut } from "next-auth/react";
-import { LogOut, Languages, ChevronDown } from "lucide-react";
+import { LogOut, ChevronDown } from "lucide-react";
 
 function getLocaleCookie(): "ar" | "en" {
   if (typeof document === "undefined") return "ar";
@@ -39,9 +39,8 @@ export function UserMenu() {
       <button
         onClick={toggleLocale}
         title={locale === "ar" ? "Switch to English" : "التبديل للعربية"}
-        className="flex items-center gap-1 text-xs px-2 py-1.5 rounded-lg border hover:bg-neutral-50 dark:hover:bg-neutral-800 dark:border-neutral-700"
+        className="text-xs px-2 py-1.5 rounded-lg border hover:bg-neutral-50 dark:hover:bg-neutral-800 dark:border-neutral-700"
       >
-        <Languages size={15} />
         AR/EN
       </button>
 

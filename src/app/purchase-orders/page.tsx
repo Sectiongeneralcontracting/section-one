@@ -2,14 +2,15 @@
 
 import { useEffect, useState } from "react";
 import { AppShell } from "@/components/layout/app-shell";
+import { useLocale } from "@/lib/use-locale";
 import { Plus, X, Trash2 } from "lucide-react";
 
-const statusLabels: Record<string, string> = {
-  DRAFT: "مسودة",
-  APPROVED: "معتمد",
-  RECEIVED: "مُستلم",
-  PAID: "مصروف",
-  CANCELLED: "ملغي",
+const statusLabels: Record<string, { ar: string; en: string }> = {
+  DRAFT: { ar: "مسودة", en: "Draft" },
+  APPROVED: { ar: "معتمد", en: "Approved" },
+  RECEIVED: { ar: "مُستلم", en: "Received" },
+  PAID: { ar: "مصروف", en: "Paid" },
+  CANCELLED: { ar: "ملغي", en: "Cancelled" },
 };
 const statusStyles: Record<string, string> = {
   DRAFT: "bg-neutral-100 text-neutral-500",
@@ -18,15 +19,40 @@ const statusStyles: Record<string, string> = {
   PAID: "bg-success/10 text-success",
   CANCELLED: "bg-danger/10 text-danger",
 };
-const nextAction: Record<string, { status: string; label: string }[]> = {
-  DRAFT: [{ status: "APPROVED", label: "اعتماد" }, { status: "CANCELLED", label: "إلغاء" }],
-  APPROVED: [{ status: "RECEIVED", label: "تسجيل استلام" }, { status: "CANCELLED", label: "إلغاء" }],
-  RECEIVED: [{ status: "PAID", label: "تسجيل صرف" }],
+const nextAction: Record<string, { status: string; ar: string; en: string }[]> = {
+  DRAFT: [{ status: "APPROVED", ar: "اعتماد", en: "Approve" }, { status: "CANCELLED", ar: "إلغاء", en: "Cancel" }],
+  APPROVED: [{ status: "RECEIVED", ar: "تسجيل استلام", en: "Mark Received" }, { status: "CANCELLED", ar: "إلغاء", en: "Cancel" }],
+  RECEIVED: [{ status: "PAID", ar: "تسجيل صرف", en: "Mark Paid" }],
   PAID: [],
   CANCELLED: [],
 };
 
+const dict = {
+  ar: {
+    title: "أوامر الشراء", newOrder: "أمر شراء جديد", cancel: "إلغاء",
+    poNumber: "رقم أمر الشراء *", supplier: "المورد *", chooseSupplier: "اختر المورد",
+    project: "المشروع (اختياري)", noProject: "بدون مشروع محدد", expectedDate: "تاريخ التوريد المتوقع",
+    items: "البنود", descPh: "الوصف", unitPh: "الوحدة", qtyPh: "الكمية", pricePh: "سعر الوحدة",
+    addItem: "إضافة بند", total: "الإجمالي", save: "حفظ أمر الشراء", saving: "جارٍ الحفظ...",
+    err: "تعذر حفظ أمر الشراء", errAction: "تعذر تنفيذ الإجراء",
+    thNumber: "رقم الأمر", thSupplier: "المورد", thProject: "المشروع", thTotal: "الإجمالي", thStatus: "الحالة",
+    loading: "جارٍ التحميل...", empty: "لا يوجد أوامر شراء بعد.",
+  },
+  en: {
+    title: "Purchase Orders", newOrder: "New Purchase Order", cancel: "Cancel",
+    poNumber: "PO Number *", supplier: "Supplier *", chooseSupplier: "Choose supplier",
+    project: "Project (optional)", noProject: "No specific project", expectedDate: "Expected Delivery Date",
+    items: "Items", descPh: "Description", unitPh: "Unit", qtyPh: "Quantity", pricePh: "Unit Price",
+    addItem: "Add Item", total: "Total", save: "Save Purchase Order", saving: "Saving...",
+    err: "Failed to save purchase order", errAction: "Action failed",
+    thNumber: "PO Number", thSupplier: "Supplier", thProject: "Project", thTotal: "Total", thStatus: "Status",
+    loading: "Loading...", empty: "No purchase orders yet.",
+  },
+};
+
 export default function PurchaseOrdersPage() {
+  const locale = useLocale();
+  const t = dict[locale];
   const [orders, setOrders] = useState<any[]>([]);
   const [suppliers, setSuppliers] = useState<any[]>([]);
   const [projects, setProjects] = useState<any[]>([]);
@@ -60,6 +86,8 @@ export default function PurchaseOrdersPage() {
   }
 
   const total = items.reduce((s, i) => s + Number(i.quantity) * Number(i.unitPrice), 0);
+  const localeCode = locale === "ar" ? "ar-EG" : "en-US";
+  const currency = locale === "ar" ? "ج.م" : "EGP";
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -71,7 +99,7 @@ export default function PurchaseOrdersPage() {
       body: JSON.stringify({ ...form, projectId: form.projectId || undefined, items }),
     });
     setSaving(false);
-    if (!res.ok) return setError((await res.json()).error?.formErrors?.join(", ") ?? "تعذر حفظ أمر الشراء");
+    if (!res.ok) return setError((await res.json()).error?.formErrors?.join(", ") ?? t.err);
     setForm({ poNumber: "", supplierId: "", projectId: "", expectedDate: "" });
     setItems([{ description: "", unit: "", quantity: 0, unitPrice: 0 }]);
     setShowForm(false);
@@ -84,17 +112,17 @@ export default function PurchaseOrdersPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status }),
     });
-    if (!res.ok) return alert((await res.json()).error ?? "تعذر تنفيذ الإجراء");
+    if (!res.ok) return alert((await res.json()).error ?? t.errAction);
     load();
   }
 
   return (
     <AppShell
-      title="أوامر الشراء"
+      title={t.title}
       action={
         <button onClick={() => setShowForm((v) => !v)} className="bg-primary text-white text-sm px-4 py-2 rounded-xl flex items-center gap-1.5">
           {showForm ? <X size={16} /> : <Plus size={16} />}
-          {showForm ? "إلغاء" : "أمر شراء جديد"}
+          {showForm ? t.cancel : t.newOrder}
         </button>
       }
     >
@@ -102,38 +130,38 @@ export default function PurchaseOrdersPage() {
         <form onSubmit={handleSubmit} className="card space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div>
-              <label className="text-sm text-neutral-600 block mb-1">رقم أمر الشراء *</label>
+              <label className="text-sm text-neutral-600 block mb-1">{t.poNumber}</label>
               <input required value={form.poNumber} onChange={(e) => setForm({ ...form, poNumber: e.target.value })} className="w-full border rounded-xl px-3 py-2" placeholder="PO-2026-001" />
             </div>
             <div>
-              <label className="text-sm text-neutral-600 block mb-1">المورد *</label>
+              <label className="text-sm text-neutral-600 block mb-1">{t.supplier}</label>
               <select required value={form.supplierId} onChange={(e) => setForm({ ...form, supplierId: e.target.value })} className="w-full border rounded-xl px-3 py-2">
-                <option value="">اختر المورد</option>
+                <option value="">{t.chooseSupplier}</option>
                 {suppliers.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
               </select>
             </div>
             <div>
-              <label className="text-sm text-neutral-600 block mb-1">المشروع (اختياري)</label>
+              <label className="text-sm text-neutral-600 block mb-1">{t.project}</label>
               <select value={form.projectId} onChange={(e) => setForm({ ...form, projectId: e.target.value })} className="w-full border rounded-xl px-3 py-2">
-                <option value="">بدون مشروع محدد</option>
+                <option value="">{t.noProject}</option>
                 {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
               </select>
             </div>
             <div>
-              <label className="text-sm text-neutral-600 block mb-1">تاريخ التوريد المتوقع</label>
+              <label className="text-sm text-neutral-600 block mb-1">{t.expectedDate}</label>
               <input type="date" value={form.expectedDate} onChange={(e) => setForm({ ...form, expectedDate: e.target.value })} className="w-full border rounded-xl px-3 py-2" />
             </div>
           </div>
 
           <div className="space-y-2">
-            <p className="text-sm font-semibold text-neutral-600">البنود</p>
+            <p className="text-sm font-semibold text-neutral-600">{t.items}</p>
             {items.map((it, i) => (
               <div key={i} className="grid grid-cols-1 sm:grid-cols-5 gap-2 items-center">
-                <input required placeholder="الوصف" value={it.description} onChange={(e) => updateItem(i, "description", e.target.value)} className="border rounded-xl px-3 py-2 sm:col-span-2" />
-                <input required placeholder="الوحدة" value={it.unit} onChange={(e) => updateItem(i, "unit", e.target.value)} className="border rounded-xl px-3 py-2" />
-                <input required type="number" step="0.001" placeholder="الكمية" value={it.quantity} onChange={(e) => updateItem(i, "quantity", Number(e.target.value))} className="border rounded-xl px-3 py-2" />
+                <input required placeholder={t.descPh} value={it.description} onChange={(e) => updateItem(i, "description", e.target.value)} className="border rounded-xl px-3 py-2 sm:col-span-2" />
+                <input required placeholder={t.unitPh} value={it.unit} onChange={(e) => updateItem(i, "unit", e.target.value)} className="border rounded-xl px-3 py-2" />
+                <input required type="number" step="0.001" placeholder={t.qtyPh} value={it.quantity} onChange={(e) => updateItem(i, "quantity", Number(e.target.value))} className="border rounded-xl px-3 py-2" />
                 <div className="flex gap-2">
-                  <input required type="number" step="0.01" placeholder="سعر الوحدة" value={it.unitPrice} onChange={(e) => updateItem(i, "unitPrice", Number(e.target.value))} className="border rounded-xl px-3 py-2 flex-1" />
+                  <input required type="number" step="0.01" placeholder={t.pricePh} value={it.unitPrice} onChange={(e) => updateItem(i, "unitPrice", Number(e.target.value))} className="border rounded-xl px-3 py-2 flex-1" />
                   {items.length > 1 && (
                     <button type="button" onClick={() => setItems((prev) => prev.filter((_, idx) => idx !== i))} className="text-danger">
                       <Trash2 size={16} />
@@ -143,14 +171,14 @@ export default function PurchaseOrdersPage() {
               </div>
             ))}
             <button type="button" onClick={() => setItems((prev) => [...prev, { description: "", unit: "", quantity: 0, unitPrice: 0 }])} className="text-primary text-sm flex items-center gap-1">
-              <Plus size={14} /> إضافة بند
+              <Plus size={14} /> {t.addItem}
             </button>
           </div>
 
-          <p className="text-sm font-semibold">الإجمالي: {total.toLocaleString("ar-EG")} ج.م</p>
+          <p className="text-sm font-semibold">{t.total}: {total.toLocaleString(localeCode)} {currency}</p>
           {error && <p className="text-danger text-sm">{error}</p>}
           <button disabled={saving} className="bg-primary text-white rounded-xl px-5 py-2 text-sm font-medium disabled:opacity-60">
-            {saving ? "جارٍ الحفظ..." : "حفظ أمر الشراء"}
+            {saving ? t.saving : t.save}
           </button>
         </form>
       )}
@@ -159,17 +187,17 @@ export default function PurchaseOrdersPage() {
         <table className="w-full text-sm">
           <thead className="bg-neutral-50 text-neutral-500">
             <tr className="text-right">
-              <th className="p-3 font-medium">رقم الأمر</th>
-              <th className="p-3 font-medium">المورد</th>
-              <th className="p-3 font-medium">المشروع</th>
-              <th className="p-3 font-medium">الإجمالي</th>
-              <th className="p-3 font-medium">الحالة</th>
+              <th className="p-3 font-medium">{t.thNumber}</th>
+              <th className="p-3 font-medium">{t.thSupplier}</th>
+              <th className="p-3 font-medium">{t.thProject}</th>
+              <th className="p-3 font-medium">{t.thTotal}</th>
+              <th className="p-3 font-medium">{t.thStatus}</th>
               <th className="p-3 font-medium"></th>
             </tr>
           </thead>
           <tbody>
-            {loading && <tr><td className="p-4 text-neutral-400" colSpan={6}>جارٍ التحميل...</td></tr>}
-            {!loading && orders.length === 0 && <tr><td className="p-4 text-neutral-400" colSpan={6}>لا يوجد أوامر شراء بعد.</td></tr>}
+            {loading && <tr><td className="p-4 text-neutral-400" colSpan={6}>{t.loading}</td></tr>}
+            {!loading && orders.length === 0 && <tr><td className="p-4 text-neutral-400" colSpan={6}>{t.empty}</td></tr>}
             {orders.map((o) => {
               const orderTotal = o.items.reduce((s: number, i: any) => s + Number(i.quantity) * Number(i.unitPrice), 0);
               return (
@@ -177,11 +205,11 @@ export default function PurchaseOrdersPage() {
                   <td className="p-3">{o.poNumber}</td>
                   <td className="p-3 font-medium">{o.supplier.name}</td>
                   <td className="p-3">{o.project?.name ?? "—"}</td>
-                  <td className="p-3">{orderTotal.toLocaleString("ar-EG")} ج.م</td>
-                  <td className="p-3"><span className={`text-xs px-2.5 py-1 rounded-full font-medium ${statusStyles[o.status]}`}>{statusLabels[o.status]}</span></td>
+                  <td className="p-3">{orderTotal.toLocaleString(localeCode)} {currency}</td>
+                  <td className="p-3"><span className={`text-xs px-2.5 py-1 rounded-full font-medium ${statusStyles[o.status]}`}>{statusLabels[o.status][locale]}</span></td>
                   <td className="p-3 flex gap-2">
                     {nextAction[o.status].map((a) => (
-                      <button key={a.status} onClick={() => transition(o.id, a.status)} className="text-primary text-xs hover:underline">{a.label}</button>
+                      <button key={a.status} onClick={() => transition(o.id, a.status)} className="text-primary text-xs hover:underline">{a[locale]}</button>
                     ))}
                   </td>
                 </tr>
