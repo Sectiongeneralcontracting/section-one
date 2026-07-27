@@ -135,7 +135,6 @@ model Project {
   milestones           Milestone[]
   variationOrders      VariationOrder[]
   employees            Employee[]
-  subcontractorContracts SubcontractorContract[]
 
   @@map("projects")
 }
@@ -420,114 +419,6 @@ enum SupplierCategory {
   SUBCONTRACTOR
   SERVICES
   OTHER
-}
-
-// ============================================================
-// Module — Contractors (مقاولي الباطن)
-// ============================================================
-
-model Subcontractor {
-  id         String   @id @default(cuid())
-  name       String
-  specialty  String?  // التخصص (كهرباء، سباكة، تشطيبات...)
-  phone      String?
-  email      String?
-  taxNumber  String?
-  address    String?
-  isActive   Boolean  @default(true)
-  notes      String?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-
-  contracts   SubcontractorContract[]
-  evaluations SubcontractorEvaluation[]
-
-  @@map("subcontractors")
-}
-
-enum SubcontractorContractStatus {
-  ACTIVE
-  COMPLETED
-  TERMINATED
-}
-
-// عقد مقاول باطن — مربوط بمشروع محدد إجباريًا (الفلتر المطلوب)
-model SubcontractorContract {
-  id              String                      @id @default(cuid())
-  subcontractorId String
-  subcontractor   Subcontractor               @relation(fields: [subcontractorId], references: [id])
-  projectId       String
-  project         Project                     @relation(fields: [projectId], references: [id])
-  contractNumber  String
-  scopeOfWork     String? // نطاق العمل
-  contractValue   Decimal                     @db.Decimal(18, 2)
-  signedDate      DateTime
-  status          SubcontractorContractStatus @default(ACTIVE)
-  createdAt       DateTime                    @default(now())
-  updatedAt       DateTime                    @updatedAt
-
-  certificates SubcontractorCertificate[]
-  payments     SubcontractorPayment[]
-
-  @@unique([projectId, contractNumber])
-  @@map("subcontractor_contracts")
-}
-
-enum SubcontractorCertificateStatus {
-  DRAFT
-  SUBMITTED
-  APPROVED
-  PAID
-}
-
-// مستخلص مقاول الباطن — بنفس منهجية النسبة التراكمية المستخدمة في مستخلصات العميل
-model SubcontractorCertificate {
-  id               String                          @id @default(cuid())
-  contractId       String
-  contract         SubcontractorContract           @relation(fields: [contractId], references: [id])
-  number           Int
-  periodFrom       DateTime
-  periodTo         DateTime
-  cumulativePct    Decimal                         @db.Decimal(6, 3)
-  thisPeriodValue  Decimal                         @db.Decimal(18, 2)
-  status           SubcontractorCertificateStatus  @default(DRAFT)
-  createdAt        DateTime                        @default(now())
-  updatedAt        DateTime                        @updatedAt
-
-  @@unique([contractId, number])
-  @@map("subcontractor_certificates")
-}
-
-// دفعة فعلية لمقاول الباطن — بتتحمّل تلقائيًا كمصروف على المشروع
-model SubcontractorPayment {
-  id         String                @id @default(cuid())
-  contractId String
-  contract   SubcontractorContract @relation(fields: [contractId], references: [id])
-  amount     Decimal               @db.Decimal(18, 2)
-  date       DateTime              @default(now())
-  notes      String?
-  expenseId  String?               @unique // ربط بالمصروف المُنشأ تلقائيًا على المشروع
-  createdById String?
-  createdAt  DateTime              @default(now())
-
-  @@map("subcontractor_payments")
-}
-
-// تقييم أداء مقاول الباطن لكل مشروع
-model SubcontractorEvaluation {
-  id              String        @id @default(cuid())
-  subcontractorId String
-  subcontractor   Subcontractor @relation(fields: [subcontractorId], references: [id])
-  projectId       String?
-  qualityScore    Int // 1-5
-  timelinessScore Int // 1-5
-  safetyScore     Int // 1-5
-  notes           String?
-  evaluatedAt     DateTime      @default(now())
-  createdById     String?
-  createdAt       DateTime      @default(now())
-
-  @@map("subcontractor_evaluations")
 }
 
 model Supplier {
@@ -875,7 +766,6 @@ enum NotificationType {
   EMPLOYEE_PENALTY_RECORDED
   LEAVE_REQUEST_SUBMITTED
   HEAD_OFFICE_EXPENSE_DISTRIBUTED
-  SUBCONTRACTOR_PAYMENT_RECORDED
 }
 
 model Notification {

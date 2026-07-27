@@ -21,6 +21,9 @@ const dict = {
     backupDesc: "تصدير نسخة كاملة من قاعدة البيانات كملف JSON، أو استعادة نسخة سابقة (سيتم استبدال كل البيانات الحالية).",
     exportBackup: "تصدير نسخة احتياطية", restoreBackup: "استعادة نسخة احتياطية", restoring: "جارٍ الاستعادة...",
     importTitle: "استيراد عقود رايه فودز (مرة واحدة)",
+    replaceTitle: "استبدال العقود بالنسخة المُحدَّثة (Word)",
+    replaceDesc: "استبدال بيانات العشر عقود (القيمة، التاريخ، جدول الكميات) بالنسخة الجديدة المستخرجة من ملفات Word — بيحدّث المشاريع الموجودة بنفس الكود بدل ما يكرر بيانات جديدة. أي مستخلصات مسجلة قبل كده هتفضل زي ما هي وهيظهر تحذير لو محتاجة مراجعة.",
+    replaceBtn: "استبدال العقود العشرة", replacing: "جارٍ الاستبدال...", confirmReplace: "تأكيد استبدال بيانات العقود العشرة بالنسخة الجديدة؟ العملية هتحدّث المشاريع الموجودة.",
     importDesc: "استيراد 10 مشاريع وعقود كاملة (بجداول الكميات) لشركة رايه فودز دفعة واحدة. آمن للتشغيل أكتر من مرة — أي مشروع موجود بالفعل هيتجاهل.",
     importBtn: "استيراد العقود العشرة", importing: "جارٍ الاستيراد...",
     loading: "جارٍ التحميل...",
@@ -46,6 +49,9 @@ const dict = {
     backupDesc: "Export a full database backup as a JSON file, or restore a previous one (this replaces all current data).",
     exportBackup: "Export Backup", restoreBackup: "Restore Backup", restoring: "Restoring...",
     importTitle: "Import Raya Foodz Contracts (one-time)",
+    replaceTitle: "Replace Contracts with Updated Version (Word)",
+    replaceDesc: "Replace the 10 contracts' data (value, date, BOQ) with the new version extracted from Word files — updates existing projects by matching code instead of duplicating. Any existing certificates stay as-is, with a warning if they need review.",
+    replaceBtn: "Replace All 10 Contracts", replacing: "Replacing...", confirmReplace: "Confirm replacing the 10 contracts' data with the new version? This will update existing projects.",
     importDesc: "Import 10 complete projects and contracts (with BOQ) for Raya Foodz at once. Safe to run more than once — existing projects are skipped.",
     importBtn: "Import 10 Contracts", importing: "Importing...",
     loading: "Loading...",
@@ -69,6 +75,8 @@ export default function SettingsPage() {
   const [restoring, setRestoring] = useState(false);
   const [importing, setImporting] = useState(false);
   const [importResults, setImportResults] = useState<any>(null);
+  const [replacing, setReplacing] = useState(false);
+  const [replaceResults, setReplaceResults] = useState<any>(null);
   const [theme, setTheme] = useState<"light" | "dark">("light");
 
   useEffect(() => {
@@ -97,6 +105,21 @@ export default function SettingsPage() {
       alert(err.message);
     }
     setImporting(false);
+  }
+
+  async function replaceContracts() {
+    if (!confirm(t.confirmReplace)) return;
+    setReplacing(true);
+    setReplaceResults(null);
+    try {
+      const res = await fetch("/api/admin/replace-contracts", { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? t.errImport);
+      setReplaceResults(data);
+    } catch (err: any) {
+      alert(err.message);
+    }
+    setReplacing(false);
   }
 
   async function exportBackup() {
@@ -280,6 +303,23 @@ export default function SettingsPage() {
         {importResults && (
           <div className="text-sm space-y-1 border-t pt-3 mt-2">
             {importResults.results.map((r: any, i: number) => (
+              <p key={i} className="text-neutral-600">
+                <span className="font-medium">{r.project}:</span> {r.status}
+              </p>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="card space-y-3">
+        <h2 className="font-semibold">{t.replaceTitle}</h2>
+        <p className="text-sm text-neutral-500">{t.replaceDesc}</p>
+        <button onClick={replaceContracts} disabled={replacing} className="bg-danger text-white rounded-xl px-5 py-2 text-sm font-medium disabled:opacity-60">
+          {replacing ? t.replacing : t.replaceBtn}
+        </button>
+        {replaceResults && (
+          <div className="text-sm space-y-1 border-t pt-3 mt-2">
+            {replaceResults.results.map((r: any, i: number) => (
               <p key={i} className="text-neutral-600">
                 <span className="font-medium">{r.project}:</span> {r.status}
               </p>
