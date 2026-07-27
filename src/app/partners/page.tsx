@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { AppShell } from "@/components/layout/app-shell";
 import { useLocale } from "@/lib/use-locale";
 import { Plus, X, HandCoins, Pencil, Trash2 } from "lucide-react";
@@ -205,7 +206,7 @@ export default function PartnersPage() {
             )}
             {partners.map((p) => (
               <tr key={p.id} className="border-t">
-                <td className="p-3 font-medium">{p.name}</td>
+                <td className="p-3 font-medium"><Link href={`/partners/${p.id}`} className="text-primary hover:underline">{p.name}</Link></td>
                 <td className="p-3">{p.phone || "—"}</td>
                 <td className="p-3">{Number(p.defaultShare)}%</td>
                 <td className="p-3">

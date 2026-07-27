@@ -170,6 +170,7 @@ model Partner {
 
   contributions        PartnerContribution[]
   projectAllocations   PartnerProjectAllocation[]
+  withdrawals          PartnerWithdrawal[]
 
   @@map("partners")
 }
@@ -215,6 +216,20 @@ model ClientPayment {
   createdAt DateTime @default(now())
 
   @@map("client_payments")
+}
+
+// سحوبات الشريك من رصيده (منفصلة عن التمويل/الإيداع)
+model PartnerWithdrawal {
+  id          String   @id @default(cuid())
+  partnerId   String
+  partner     Partner  @relation(fields: [partnerId], references: [id])
+  amount      Decimal  @db.Decimal(18, 2)
+  date        DateTime @default(now())
+  notes       String?
+  createdById String?
+  createdAt   DateTime @default(now())
+
+  @@map("partner_withdrawals")
 }
 
 model ClosingReport {

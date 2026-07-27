@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { logAudit, notifyAdmins } from "@/lib/audit";
+import { computePartnerProfit } from "@/lib/allocations";
 
 export async function GET(_req: Request, { params }: { params: { id: string } }) {
   const session = await getServerSession(authOptions);
@@ -33,7 +34,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   const body = await req.json();
   const before = await prisma.project.findUnique({
     where: { id: params.id },
-    include: { expenses: true },
+    include: { expenses: true, partnerAllocations: true },
   });
   if (!before) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
@@ -46,11 +47,20 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     const totalRevenue = Number(before.contractValue);
     const netProfit = totalRevenue - totalExpense;
 
+    // توزيع ربح فعلي لكل شريك مشارك في المشروع حسب نسبته — بيتسجل بس دلوقتي وقت الإغلاق
+    const distributionUpdates = before.partnerAllocations.map((a) =>
+      prisma.partnerProjectAllocation.update({
+        where: { id: a.id },
+        data: { profitAmt: computePartnerProfit(Number(a.sharePct), netProfit) },
+      })
+    );
+
     const [project, report] = await prisma.$transaction([
       prisma.project.update({ where: { id: params.id }, data: { status: "CLOSED" } }),
       prisma.closingReport.create({
         data: { projectId: params.id, totalRevenue, totalExpense, netProfit },
       }),
+      ...distributionUpdates,
     ]);
 
     await logAudit({
@@ -61,7 +71,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       before,
       after: project,
     });
-    await notifyAdmins("PROJECT_CLOSED", `تم إغلاق مشروع: ${before.name}`);
+    await notifyAdmins("PROJECT_CLOSED", `تم إغلاق مشروع: ${before.name} وتوزيع الأرباح على الشركاء`);
 
     return NextResponse.json({ project, report });
   }
@@ -70,10 +80,15 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     if (role !== "ADMIN")
       return NextResponse.json({ error: "إعادة الفتح تتطلب صلاحية Admin" }, { status: 403 });
 
-    const project = await prisma.project.update({
-      where: { id: params.id },
-      data: { status: "ONGOING" },
-    });
+    // إلغاء توزيع الأرباح لحد ما يتقفل المشروع تاني — الأرباح متوزعة رسميًا بس والمشروع مقفول
+    const clearDistributions = before.partnerAllocations.map((a) =>
+      prisma.partnerProjectAllocation.update({ where: { id: a.id }, data: { profitAmt: null } })
+    );
+
+    const [project] = await prisma.$transaction([
+      prisma.project.update({ where: { id: params.id }, data: { status: "ONGOING" } }),
+      ...clearDistributions,
+    ]);
 
     await logAudit({
       userId: (session.user as any).id,
@@ -83,7 +98,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       before,
       after: project,
     });
-    await notifyAdmins("PROJECT_REOPENED", `تمت إعادة فتح مشروع: ${before.name}`);
+    await notifyAdmins("PROJECT_REOPENED", `تمت إعادة فتح مشروع: ${before.name} — توزيع الأرباح اتلغى مؤقتًا لحد الإغلاق تاني`);
 
     return NextResponse.json(project);
   }
