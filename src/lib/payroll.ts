@@ -1,7 +1,7 @@
 const round2 = (n: number) => Math.round(n * 100) / 100;
 
-export function computeNetSalary(baseSalary: number, allowances: number, deductions: number): number {
-  return round2(baseSalary + allowances - deductions);
+export function computeNetSalary(baseSalary: number, allowances: number, deductions: number, overtimeAmount = 0): number {
+  return round2(baseSalary + allowances + overtimeAmount - deductions);
 }
 
 export type AttendanceRecordInput = { status: "PRESENT" | "ABSENT" | "LEAVE" | "SICK" };

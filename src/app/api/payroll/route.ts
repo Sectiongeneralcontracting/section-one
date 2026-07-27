@@ -10,6 +10,7 @@ const genSchema = z.object({
   employeeId: z.string(),
   month: z.string().regex(/^\d{4}-\d{2}$/), // "YYYY-MM"
   allowances: z.number().min(0).default(0),
+  overtimeAmount: z.number().min(0).default(0),
   extraDeductions: z.number().min(0).default(0), // تأمينات/ضريبة إضافية غير الغياب
 });
 
@@ -57,19 +58,39 @@ export async function POST(req: Request) {
   const absentDays = attendance.filter((a) => a.status === "ABSENT").length;
   const absenceDeduction = computeAbsenceDeduction(Number(employee.baseSalary), absentDays);
 
-  const totalDeductions = parsed.data.extraDeductions + absenceDeduction;
-  const netSalary = computeNetSalary(Number(employee.baseSalary), parsed.data.allowances, totalDeductions);
+  // السلف اللي لسه ماتخصمتش + الجزاءات المسجلة خلال الشهر ده — بتتضاف تلقائيًا للاستقطاعات
+  const pendingAdvances = await prisma.employeeAdvance.findMany({
+    where: { employeeId: parsed.data.employeeId, deducted: false },
+  });
+  const monthPenalties = await prisma.employeePenalty.findMany({
+    where: { employeeId: parsed.data.employeeId, date: { gte: from, lte: to } },
+  });
+  const advancesTotal = pendingAdvances.reduce((s, a) => s + Number(a.amount), 0);
+  const penaltiesTotal = monthPenalties.reduce((s, p) => s + Number(p.amount), 0);
 
-  const record = await prisma.payrollRecord.create({
-    data: {
-      employeeId: parsed.data.employeeId,
-      month: parsed.data.month,
-      baseSalary: employee.baseSalary,
-      allowances: parsed.data.allowances,
-      deductions: totalDeductions,
-      netSalary,
-    },
-    include: { employee: true },
+  const totalDeductions = parsed.data.extraDeductions + absenceDeduction + advancesTotal + penaltiesTotal;
+  const netSalary = computeNetSalary(Number(employee.baseSalary), parsed.data.allowances, totalDeductions, parsed.data.overtimeAmount);
+
+  const record = await prisma.$transaction(async (tx) => {
+    const created = await tx.payrollRecord.create({
+      data: {
+        employeeId: parsed.data.employeeId,
+        month: parsed.data.month,
+        baseSalary: employee.baseSalary,
+        allowances: parsed.data.allowances,
+        overtimeAmount: parsed.data.overtimeAmount,
+        deductions: totalDeductions,
+        netSalary,
+      },
+      include: { employee: true },
+    });
+    if (pendingAdvances.length > 0) {
+      await tx.employeeAdvance.updateMany({
+        where: { id: { in: pendingAdvances.map((a) => a.id) } },
+        data: { deducted: true },
+      });
+    }
+    return created;
   });
 
   await logAudit({

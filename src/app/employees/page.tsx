@@ -34,7 +34,7 @@ export default function EmployeesPage() {
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-  const [form, setForm] = useState({ name: "", jobTitle: "", department: "", phone: "", hireDate: "", baseSalary: 0 });
+  const [form, setForm] = useState({ name: "", jobTitle: "", department: "", phone: "", hireDate: "", baseSalary: 0, bankName: "", bankAccountNumber: "" });
 
   async function load() {
     setLoading(true);
@@ -58,7 +58,7 @@ export default function EmployeesPage() {
     });
     setSaving(false);
     if (!res.ok) return setError(t.err);
-    setForm({ name: "", jobTitle: "", department: "", phone: "", hireDate: "", baseSalary: 0 });
+    setForm({ name: "", jobTitle: "", department: "", phone: "", hireDate: "", baseSalary: 0, bankName: "", bankAccountNumber: "" });
     setShowForm(false);
     load();
   }
@@ -98,6 +98,14 @@ export default function EmployeesPage() {
           <div>
             <label className="text-sm text-neutral-600 block mb-1">{t.baseSalary}</label>
             <input required type="number" step="0.01" value={form.baseSalary} onChange={(e) => setForm({ ...form, baseSalary: Number(e.target.value) })} className="w-full border rounded-xl px-3 py-2" />
+          </div>
+          <div>
+            <label className="text-sm text-neutral-600 block mb-1">{locale === "ar" ? "اسم البنك" : "Bank Name"}</label>
+            <input value={form.bankName} onChange={(e) => setForm({ ...form, bankName: e.target.value })} className="w-full border rounded-xl px-3 py-2" />
+          </div>
+          <div>
+            <label className="text-sm text-neutral-600 block mb-1">{locale === "ar" ? "رقم الحساب البنكي" : "Bank Account Number"}</label>
+            <input value={form.bankAccountNumber} onChange={(e) => setForm({ ...form, bankAccountNumber: e.target.value })} className="w-full border rounded-xl px-3 py-2" />
           </div>
           {error && <p className="text-danger text-sm lg:col-span-3">{error}</p>}
           <button disabled={saving} className="bg-primary text-white rounded-xl px-4 py-2 text-sm font-medium lg:col-span-3">{t.save}</button>

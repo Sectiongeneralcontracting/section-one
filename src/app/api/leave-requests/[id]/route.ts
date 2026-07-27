@@ -12,31 +12,27 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const body = await req.json();
-  const before = await prisma.employee.findUnique({ where: { id: params.id } });
+  const status = body.status as string;
+  if (!["APPROVED", "REJECTED", "PENDING"].includes(status)) {
+    return NextResponse.json({ error: "حالة غير معروفة" }, { status: 400 });
+  }
+
+  const before = await prisma.leaveRequest.findUnique({ where: { id: params.id } });
   if (!before) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const employee = await prisma.employee.update({
+  const leave = await prisma.leaveRequest.update({
     where: { id: params.id },
-    data: {
-      name: body.name ?? undefined,
-      jobTitle: body.jobTitle ?? undefined,
-      department: body.department ?? undefined,
-      phone: body.phone ?? undefined,
-      baseSalary: body.baseSalary ?? undefined,
-      isActive: body.isActive ?? undefined,
-      bankName: body.bankName ?? undefined,
-      bankAccountNumber: body.bankAccountNumber ?? undefined,
-    },
+    data: { status: status as any },
   });
 
   await logAudit({
     userId: (session.user as any).id,
-    action: "EMPLOYEE_UPDATED",
-    entityType: "Employee",
-    entityId: employee.id,
+    action: "LEAVE_REQUEST_UPDATED",
+    entityType: "LeaveRequest",
+    entityId: leave.id,
     before,
-    after: employee,
+    after: leave,
   });
 
-  return NextResponse.json(employee);
+  return NextResponse.json(leave);
 }

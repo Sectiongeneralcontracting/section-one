@@ -568,6 +568,8 @@ model Employee {
   nationalId  String?  @unique
   hireDate    DateTime
   baseSalary  Decimal  @db.Decimal(18, 2)
+  bankName          String? // لملف تحويل البنك
+  bankAccountNumber String?
   isActive    Boolean  @default(true)
   notes       String?
   createdAt   DateTime @default(now())
@@ -575,8 +577,82 @@ model Employee {
 
   payrollRecords    PayrollRecord[]
   attendanceRecords AttendanceRecord[]
+  contracts         EmployeeContract[]
+  advances          EmployeeAdvance[]
+  penalties         EmployeePenalty[]
+  leaveRequests     LeaveRequest[]
 
   @@map("employees")
+}
+
+// عقد عمل الموظف
+model EmployeeContract {
+  id           String    @id @default(cuid())
+  employeeId   String
+  employee     Employee  @relation(fields: [employeeId], references: [id])
+  contractType String    // دائم / مؤقت / تحت الاختبار...
+  startDate    DateTime
+  endDate      DateTime?
+  salary       Decimal   @db.Decimal(18, 2)
+  notes        String?
+  createdAt    DateTime  @default(now())
+
+  @@map("employee_contracts")
+}
+
+// سلفة على الموظف
+model EmployeeAdvance {
+  id         String   @id @default(cuid())
+  employeeId String
+  employee   Employee @relation(fields: [employeeId], references: [id])
+  amount     Decimal  @db.Decimal(18, 2)
+  date       DateTime @default(now())
+  reason     String?
+  deducted   Boolean  @default(false) // اتخصمت من الراتب ولا لسه
+  createdAt  DateTime @default(now())
+
+  @@map("employee_advances")
+}
+
+// جزاء على الموظف
+model EmployeePenalty {
+  id         String   @id @default(cuid())
+  employeeId String
+  employee   Employee @relation(fields: [employeeId], references: [id])
+  amount     Decimal  @db.Decimal(18, 2)
+  date       DateTime @default(now())
+  reason     String
+  createdAt  DateTime @default(now())
+
+  @@map("employee_penalties")
+}
+
+enum LeaveType {
+  ANNUAL
+  SICK
+  UNPAID
+  OTHER
+}
+
+enum LeaveStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+// طلب إجازة
+model LeaveRequest {
+  id         String      @id @default(cuid())
+  employeeId String
+  employee   Employee    @relation(fields: [employeeId], references: [id])
+  type       LeaveType   @default(ANNUAL)
+  startDate  DateTime
+  endDate    DateTime
+  status     LeaveStatus @default(PENDING)
+  notes      String?
+  createdAt  DateTime    @default(now())
+
+  @@map("leave_requests")
 }
 
 enum PayrollStatus {
@@ -592,7 +668,8 @@ model PayrollRecord {
   month       String        // صيغة "YYYY-MM"
   baseSalary  Decimal       @db.Decimal(18, 2)
   allowances  Decimal       @default(0) @db.Decimal(18, 2)
-  deductions  Decimal       @default(0) @db.Decimal(18, 2) // تأمينات/ضريبة/جزاءات
+  overtimeAmount Decimal    @default(0) @db.Decimal(18, 2)
+  deductions  Decimal       @default(0) @db.Decimal(18, 2) // تأمينات/ضريبة/جزاءات/سلف
   netSalary   Decimal       @db.Decimal(18, 2)
   status      PayrollStatus @default(DRAFT)
   paidDate    DateTime?
@@ -652,6 +729,9 @@ enum NotificationType {
   PAYROLL_PAID
   MILESTONE_COMPLETED
   VARIATION_ORDER_APPROVED
+  EMPLOYEE_ADVANCE_RECORDED
+  EMPLOYEE_PENALTY_RECORDED
+  LEAVE_REQUEST_SUBMITTED
 }
 
 model Notification {
