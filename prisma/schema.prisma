@@ -647,8 +647,8 @@ enum SiteRequestStatus {
 // طلب من مهندس الموقع (شراء مادة من مورد، أو طلب عدد عمالة) — بيمر باعتماد المدير المالي، وبعدين الأدمن
 model SiteRequest {
   id           String          @id @default(cuid())
-  serialNumber Int             @unique // رقم مسلسل تلقائي تصاعدي
-  code         String          @unique // كود تلقائي، مثال: SR-000123
+  serialNumber Int             @unique @default(0) // رقم مسلسل تلقائي تصاعدي
+  code         String          @unique @default("SR-000000") // كود تلقائي، مثال: SR-000123
   projectId    String
   project      Project         @relation(fields: [projectId], references: [id])
   type         SiteRequestType
