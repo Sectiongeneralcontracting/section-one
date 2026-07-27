@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { logAudit } from "@/lib/audit";
+import { canEditSiteReport } from "@/lib/site-report-access";
 
 const schema = z.object({
   trade: z.string().min(1),
@@ -21,6 +22,9 @@ export async function POST(req: Request, { params }: { params: { id: string } })
 
   const report = await prisma.siteDailyReport.findUnique({ where: { id: params.id } });
   if (!report) return NextResponse.json({ error: "التقرير غير موجود" }, { status: 404 });
+
+  const access = canEditSiteReport(report.createdAt, (session.user as any).role);
+  if (!access.allowed) return NextResponse.json({ error: access.reason }, { status: 403 });
 
   const row = await prisma.siteWorkerAttendance.create({
     data: { reportId: params.id, trade: parsed.data.trade, count: parsed.data.count, notes: parsed.data.notes },

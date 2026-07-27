@@ -6,6 +6,7 @@ export const clientSchema = z.object({
   email: z.string().email().optional().or(z.literal("")),
   address: z.string().optional(),
   notes: z.string().optional(),
+  logoUrl: z.string().optional(),
 });
 
 export const projectSchema = z.object({

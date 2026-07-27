@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { logAudit } from "@/lib/audit";
+import { canEditSiteReport } from "@/lib/site-report-access";
 
 export async function GET(_req: Request, { params }: { params: { id: string } }) {
   const session = await getServerSession(authOptions);
@@ -11,7 +12,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
   const report = await prisma.siteDailyReport.findUnique({
     where: { id: params.id },
     include: {
-      project: { select: { id: true, name: true, code: true } },
+      project: { select: { id: true, name: true, code: true, client: { select: { name: true, logoUrl: true } } } },
       workerAttendance: { orderBy: { createdAt: "asc" } },
       equipmentLogs: { include: { equipment: { select: { id: true, name: true } } }, orderBy: { createdAt: "asc" } },
       materialLogs: { include: { item: { select: { id: true, name: true, unit: true } } }, orderBy: { createdAt: "asc" } },
@@ -29,6 +30,9 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   const body = await req.json();
   const before = await prisma.siteDailyReport.findUnique({ where: { id: params.id } });
   if (!before) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+  const access = canEditSiteReport(before.createdAt, (session.user as any).role);
+  if (!access.allowed) return NextResponse.json({ error: access.reason }, { status: 403 });
 
   const report = await prisma.siteDailyReport.update({
     where: { id: params.id },

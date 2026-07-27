@@ -108,6 +108,7 @@ model Client {
   email       String?
   address     String?
   notes       String?
+  logoUrl     String?   @db.Text // شعار العميل (data URL)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
@@ -154,6 +155,7 @@ model Project {
   employees            Employee[]
   subcontractorContracts SubcontractorContract[]
   siteDailyReports       SiteDailyReport[]
+  siteRequests           SiteRequest[]
 
   @@map("projects")
 }
@@ -630,6 +632,53 @@ model SitePhoto {
   @@map("site_photos")
 }
 
+enum SiteRequestType {
+  PURCHASE // طلب شراء من مورد
+  LABOR    // طلب عدد عمالة
+}
+
+enum SiteRequestStatus {
+  PENDING_FINANCE // في انتظار اعتماد المدير المالي
+  PENDING_ADMIN   // اتاعتمد من المالي، في انتظار اعتماد الأدمن
+  APPROVED        // اتاعتمد نهائيًا من الاتنين
+  REJECTED
+}
+
+// طلب من مهندس الموقع (شراء مادة من مورد، أو طلب عدد عمالة) — بيمر باعتماد المدير المالي، وبعدين الأدمن
+model SiteRequest {
+  id        String          @id @default(cuid())
+  projectId String
+  project   Project         @relation(fields: [projectId], references: [id])
+  type      SiteRequestType
+
+  // بيانات طلب الشراء
+  supplierId      String?
+  supplier        Supplier? @relation(fields: [supplierId], references: [id])
+  itemDescription String?
+  estimatedAmount Decimal?  @db.Decimal(18, 2)
+
+  // بيانات طلب العمالة
+  trade        String?
+  workersCount Int?
+  neededDate   DateTime?
+
+  notes  String?
+  status SiteRequestStatus @default(PENDING_FINANCE)
+
+  requestedById       String?
+  financeApprovedById String?
+  financeApprovedAt   DateTime?
+  adminApprovedById   String?
+  adminApprovedAt     DateTime?
+  rejectedById        String?
+  rejectionReason     String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("site_requests")
+}
+
 model Supplier {
   id         String           @id @default(cuid())
   name       String
@@ -644,6 +693,7 @@ model Supplier {
   updatedAt  DateTime         @updatedAt
 
   purchaseOrders PurchaseOrder[]
+  siteRequests   SiteRequest[]
 
   @@map("suppliers")
 }
@@ -978,6 +1028,10 @@ enum NotificationType {
   LEAVE_REQUEST_SUBMITTED
   HEAD_OFFICE_EXPENSE_DISTRIBUTED
   SUBCONTRACTOR_PAYMENT_RECORDED
+  SITE_REQUEST_SUBMITTED
+  SITE_REQUEST_FINANCE_APPROVED
+  SITE_REQUEST_APPROVED
+  SITE_REQUEST_REJECTED
 }
 
 model Notification {

@@ -4,7 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { AppShell } from "@/components/layout/app-shell";
 import { useLocale } from "@/lib/use-locale";
-import { Plus, X, Pencil, Trash2 } from "lucide-react";
+import { resizeImageToDataUrl } from "@/lib/image-utils";
+import { Plus, X, Pencil, Trash2, Image as ImageIcon } from "lucide-react";
 
 type Client = {
   id: string;
@@ -13,6 +14,7 @@ type Client = {
   email?: string;
   address?: string;
   notes?: string;
+  logoUrl?: string;
   projects: { contractValue: string; status: string }[];
 };
 
@@ -28,6 +30,7 @@ const dict = {
     email: "البريد الإلكتروني",
     address: "العنوان",
     notes: "ملاحظات",
+    logo: "شعار العميل", uploadLogo: "رفع شعار", uploading: "جارٍ الرفع...", removeLogo: "إزالة",
     save: "حفظ العميل",
     saveEdit: "حفظ التعديلات",
     saving: "جارٍ الحفظ...",
@@ -57,6 +60,7 @@ const dict = {
     email: "Email",
     address: "Address",
     notes: "Notes",
+    logo: "Client Logo", uploadLogo: "Upload Logo", uploading: "Uploading...", removeLogo: "Remove",
     save: "Save Client",
     saveEdit: "Save Changes",
     saving: "Saving...",
@@ -85,8 +89,9 @@ export default function ClientsPage() {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState({ name: "", phone: "", email: "", address: "", notes: "" });
+  const [form, setForm] = useState({ name: "", phone: "", email: "", address: "", notes: "", logoUrl: "" });
   const [error, setError] = useState("");
+  const [uploadingLogo, setUploadingLogo] = useState(false);
   const [searchName, setSearchName] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
 
@@ -103,14 +108,28 @@ export default function ClientsPage() {
 
   function startEdit(c: Client) {
     setEditingId(c.id);
-    setForm({ name: c.name, phone: c.phone ?? "", email: c.email ?? "", address: c.address ?? "", notes: c.notes ?? "" });
+    setForm({ name: c.name, phone: c.phone ?? "", email: c.email ?? "", address: c.address ?? "", notes: c.notes ?? "", logoUrl: c.logoUrl ?? "" });
     setShowForm(true);
   }
 
   function startNew() {
     setEditingId(null);
-    setForm({ name: "", phone: "", email: "", address: "", notes: "" });
+    setForm({ name: "", phone: "", email: "", address: "", notes: "", logoUrl: "" });
     setShowForm((v) => !v || editingId !== null);
+  }
+
+  async function handleLogoUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingLogo(true);
+    try {
+      const dataUrl = await resizeImageToDataUrl(file, 400, 0.85);
+      setForm((f) => ({ ...f, logoUrl: dataUrl }));
+    } catch {
+      alert(t.err);
+    }
+    setUploadingLogo(false);
+    e.target.value = "";
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -127,7 +146,7 @@ export default function ClientsPage() {
       setError(t.err);
       return;
     }
-    setForm({ name: "", phone: "", email: "", address: "", notes: "" });
+    setForm({ name: "", phone: "", email: "", address: "", notes: "", logoUrl: "" });
     setShowForm(false);
     setEditingId(null);
     load();
@@ -217,6 +236,27 @@ export default function ClientsPage() {
               rows={2}
             />
           </div>
+          <div className="sm:col-span-2">
+            <label className="text-sm text-neutral-600 block mb-1">{t.logo}</label>
+            <div className="flex items-center gap-3">
+              {form.logoUrl ? (
+                <img src={form.logoUrl} alt="logo" className="h-14 w-14 object-contain rounded-lg border bg-white" />
+              ) : (
+                <div className="h-14 w-14 rounded-lg border bg-neutral-50 flex items-center justify-center text-neutral-300">
+                  <ImageIcon size={20} />
+                </div>
+              )}
+              <label className="border rounded-xl px-4 py-2 text-sm font-medium cursor-pointer">
+                {uploadingLogo ? t.uploading : t.uploadLogo}
+                <input type="file" accept="image/*" onChange={handleLogoUpload} disabled={uploadingLogo} className="hidden" />
+              </label>
+              {form.logoUrl && (
+                <button type="button" onClick={() => setForm({ ...form, logoUrl: "" })} className="text-danger text-sm">
+                  {t.removeLogo}
+                </button>
+              )}
+            </div>
+          </div>
           {error && <p className="text-danger text-sm sm:col-span-2">{error}</p>}
           <div className="sm:col-span-2 flex gap-2">
             <button
@@ -260,6 +300,7 @@ export default function ClientsPage() {
         <table className="w-full text-sm">
           <thead className="bg-neutral-50 text-neutral-500">
             <tr className="text-right">
+              <th className="p-3 font-medium"></th>
               <th className="p-3 font-medium">{t.thName}</th>
               <th className="p-3 font-medium">{t.thPhone}</th>
               <th className="p-3 font-medium">{t.thEmail}</th>
@@ -270,13 +311,20 @@ export default function ClientsPage() {
           </thead>
           <tbody>
             {loading && (
-              <tr><td className="p-4 text-neutral-400" colSpan={6}>{t.loading}</td></tr>
+              <tr><td className="p-4 text-neutral-400" colSpan={7}>{t.loading}</td></tr>
             )}
             {!loading && filteredClients.length === 0 && (
-              <tr><td className="p-4 text-neutral-400" colSpan={6}>{t.noMatch}</td></tr>
+              <tr><td className="p-4 text-neutral-400" colSpan={7}>{t.noMatch}</td></tr>
             )}
             {filteredClients.map((c) => (
               <tr key={c.id} className="border-t">
+                <td className="p-3">
+                  {c.logoUrl ? (
+                    <img src={c.logoUrl} alt={c.name} className="h-9 w-9 object-contain rounded-lg border bg-white" />
+                  ) : (
+                    <div className="h-9 w-9 rounded-lg border bg-neutral-50" />
+                  )}
+                </td>
                 <td className="p-3 font-medium">
                   <Link href={`/clients/${c.id}`} className="text-primary hover:underline">{c.name}</Link>
                 </td>

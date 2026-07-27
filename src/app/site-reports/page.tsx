@@ -115,7 +115,7 @@ export default function SiteReportsPage() {
         <label className="text-sm text-neutral-600 block mb-1">{t.filterProject}</label>
         <select value={filterProject} onChange={(e) => setFilterProject(e.target.value)} className="w-full border rounded-xl px-3 py-2">
           <option value="">{t.allProjects}</option>
-          {projects.map((p: any) => <option key={p.id} value={p.id}>{p.name}</option>)}
+          {projects.filter((p: any) => p.status !== "CLOSED").map((p: any) => <option key={p.id} value={p.id}>{p.name}</option>)}
         </select>
       </div>
 

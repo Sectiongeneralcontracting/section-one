@@ -19,6 +19,7 @@ const items = [
   { href: "/equipment", label: "المعدات", labelEn: "Equipment", icon: HardHat, module: "equipment" },
   { href: "/contractors", label: "مقاولو الباطن", labelEn: "Contractors", icon: HardHat, module: "contractors" },
   { href: "/site-reports", label: "إدارة الموقع", labelEn: "Site Management", icon: ClipboardList, module: "site-reports" },
+  { href: "/site-requests", label: "طلبات الموقع", labelEn: "Site Requests", icon: FileSignature, module: "site-requests" },
   { href: "/reports", label: "التقارير", labelEn: "Reports", icon: FileBarChart, module: "reports" },
   { href: "/users", label: "المستخدمون", labelEn: "Users", icon: UserCog, module: "users" },
   { href: "/settings", label: "الإعدادات", labelEn: "Settings", icon: Settings, module: "settings" },

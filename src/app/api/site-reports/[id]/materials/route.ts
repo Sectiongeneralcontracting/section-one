@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { logAudit } from "@/lib/audit";
 import { computeStockBalance, canWithdraw } from "@/lib/inventory";
+import { canEditSiteReport } from "@/lib/site-report-access";
 
 const schema = z.object({
   itemId: z.string().optional(),
@@ -31,6 +32,9 @@ export async function POST(req: Request, { params }: { params: { id: string } })
 
   const report = await prisma.siteDailyReport.findUnique({ where: { id: params.id }, include: { project: true } });
   if (!report) return NextResponse.json({ error: "التقرير غير موجود" }, { status: 404 });
+
+  const access = canEditSiteReport(report.createdAt, (session.user as any).role);
+  if (!access.allowed) return NextResponse.json({ error: access.reason }, { status: 403 });
 
   let stockMovementId: string | undefined;
 

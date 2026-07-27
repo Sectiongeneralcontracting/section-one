@@ -31,3 +31,14 @@ export async function notifyAdmins(type: NotificationType, message: string) {
     data: recipients.map((r) => ({ userId: r.id, type, message })),
   });
 }
+
+// يرسل إشعار لأدوار وظيفية محددة بس (مثلًا المدير المالي بس وقت طلب محتاج اعتماده)
+export async function notifyRoles(roles: string[], type: NotificationType, message: string) {
+  const recipients = await prisma.user.findMany({
+    where: { role: { in: roles as any }, isActive: true },
+    select: { id: true },
+  });
+  await prisma.notification.createMany({
+    data: recipients.map((r) => ({ userId: r.id, type, message })),
+  });
+}

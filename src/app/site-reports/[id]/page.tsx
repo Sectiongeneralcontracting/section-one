@@ -213,6 +213,15 @@ export default function SiteReportDetailPage() {
 
   return (
     <AppShell title={`${report.project.name} — ${new Date(report.date).toLocaleDateString(localeCode)}`}>
+      {report.project.client?.logoUrl && (
+        <div className="card flex items-center gap-3 !py-3">
+          <img src={report.project.client.logoUrl} alt={report.project.client.name} className="h-12 w-12 object-contain rounded-lg bg-white border" />
+          <div>
+            <p className="text-sm font-semibold">{report.project.client.name}</p>
+            <p className="text-xs text-neutral-400">{report.project.name}</p>
+          </div>
+        </div>
+      )}
       <div className="card grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label className="text-sm text-neutral-600 block mb-1">{t.weatherNotes}</label>

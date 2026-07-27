@@ -15,6 +15,7 @@ export const MODULES: ModuleDef[] = [
   { key: "equipment", label: "المعدات", labelEn: "Equipment", href: "/equipment" },
   { key: "contractors", label: "مقاولو الباطن", labelEn: "Contractors", href: "/contractors" },
   { key: "site-reports", label: "إدارة الموقع", labelEn: "Site Management", href: "/site-reports" },
+  { key: "site-requests", label: "طلبات الموقع (شراء/عمالة)", labelEn: "Site Requests (Purchase/Labor)", href: "/site-requests" },
   { key: "employees", label: "الموظفون", labelEn: "Employees", href: "/employees" },
   { key: "hr-extra", label: "شؤون الموظفين (عقود/سلف/جزاءات/إجازات)", labelEn: "HR (contracts/advances/penalties/leaves)", href: "/hr" },
   { key: "attendance", label: "الحضور والانصراف", labelEn: "Attendance", href: "/attendance" },
@@ -40,16 +41,16 @@ export const ALL_ROLES = Object.keys(ROLE_LABELS);
 // صلاحيات افتراضية منطقية لكل دور جديد — بتتحط أول مرة بس، وبعدين الأدمن يقدر يعدّلها من الإعدادات
 export const DEFAULT_PERMISSIONS: Record<string, { view: string[]; edit: string[] }> = {
   SITE_ENGINEER: {
-    view: ["dashboard", "projects", "contracts", "equipment", "inventory", "contractors", "attendance", "site-reports"],
-    edit: ["projects", "attendance", "site-reports"],
+    view: ["dashboard", "projects", "contracts", "equipment", "inventory", "contractors", "attendance", "site-reports", "site-requests"],
+    edit: ["projects", "attendance", "site-reports", "site-requests"],
   },
   ACCOUNTANT: {
     view: ["dashboard", "projects", "clients", "suppliers", "purchase-orders", "payroll", "reports", "head-office-expenses"],
     edit: ["purchase-orders", "payroll", "head-office-expenses"],
   },
   FINANCE_MANAGER: {
-    view: ["dashboard", "projects", "clients", "partners", "contracts", "reports", "payroll", "head-office-expenses"],
-    edit: ["partners", "reports", "head-office-expenses"],
+    view: ["dashboard", "projects", "clients", "partners", "contracts", "reports", "payroll", "head-office-expenses", "site-requests"],
+    edit: ["partners", "reports", "head-office-expenses", "site-requests"],
   },
   HR_MANAGER: {
     view: ["dashboard", "employees", "hr-extra", "attendance", "payroll"],
