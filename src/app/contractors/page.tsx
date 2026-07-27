@@ -4,24 +4,28 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { AppShell } from "@/components/layout/app-shell";
 import { useLocale } from "@/lib/use-locale";
-import { Plus, X } from "lucide-react";
+import { Plus, X, Pencil } from "lucide-react";
 
 const dict = {
   ar: {
     title: "مقاولو الباطن", newSub: "مقاول باطن جديد", cancel: "إلغاء",
+    editTitle: "تعديل بيانات المقاول", newTitle: "مقاول باطن جديد",
     name: "الاسم *", specialty: "التخصص", phone: "الهاتف", email: "البريد الإلكتروني",
-    taxNumber: "الرقم الضريبي", address: "العنوان", save: "حفظ", saving: "جارٍ الحفظ...", err: "تعذر الحفظ",
+    taxNumber: "الرقم الضريبي", address: "العنوان", save: "حفظ", saveEdit: "حفظ التعديلات", saving: "جارٍ الحفظ...", err: "تعذر الحفظ",
     thName: "الاسم", thSpecialty: "التخصص", thContracts: "عدد العقود", thPaid: "إجمالي المدفوع", thRating: "متوسط التقييم",
     loading: "جارٍ التحميل...", empty: "لا يوجد مقاولو باطن مسجلين بعد.",
   },
   en: {
     title: "Subcontractors", newSub: "New Subcontractor", cancel: "Cancel",
+    editTitle: "Edit Subcontractor", newTitle: "New Subcontractor",
     name: "Name *", specialty: "Specialty", phone: "Phone", email: "Email",
-    taxNumber: "Tax Number", address: "Address", save: "Save", saving: "Saving...", err: "Failed to save",
+    taxNumber: "Tax Number", address: "Address", save: "Save", saveEdit: "Save Changes", saving: "Saving...", err: "Failed to save",
     thName: "Name", thSpecialty: "Specialty", thContracts: "Contracts", thPaid: "Total Paid", thRating: "Avg. Rating",
     loading: "Loading...", empty: "No subcontractors registered yet.",
   },
 };
+
+const emptyForm = { name: "", specialty: "", phone: "", email: "", taxNumber: "", address: "" };
 
 export default function ContractorsPage() {
   const locale = useLocale();
@@ -31,9 +35,10 @@ export default function ContractorsPage() {
   const [subs, setSubs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-  const [form, setForm] = useState({ name: "", specialty: "", phone: "", email: "", taxNumber: "", address: "" });
+  const [form, setForm] = useState(emptyForm);
 
   async function load() {
     setLoading(true);
@@ -44,18 +49,38 @@ export default function ContractorsPage() {
 
   useEffect(() => { load(); }, []);
 
+  function startNew() {
+    setEditingId(null);
+    setForm(emptyForm);
+    setShowForm((v) => !v || editingId !== null);
+  }
+
+  function startEdit(s: any) {
+    setEditingId(s.id);
+    setForm({
+      name: s.name,
+      specialty: s.specialty ?? "",
+      phone: s.phone ?? "",
+      email: s.email ?? "",
+      taxNumber: s.taxNumber ?? "",
+      address: s.address ?? "",
+    });
+    setShowForm(true);
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
     setError("");
-    const res = await fetch("/api/subcontractors", {
-      method: "POST",
+    const res = await fetch(editingId ? `/api/subcontractors/${editingId}` : "/api/subcontractors", {
+      method: editingId ? "PATCH" : "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(form),
     });
     setSaving(false);
     if (!res.ok) return setError(t.err);
-    setForm({ name: "", specialty: "", phone: "", email: "", taxNumber: "", address: "" });
+    setForm(emptyForm);
+    setEditingId(null);
     setShowForm(false);
     load();
   }
@@ -64,14 +89,15 @@ export default function ContractorsPage() {
     <AppShell
       title={t.title}
       action={
-        <button onClick={() => setShowForm((v) => !v)} className="bg-primary text-white text-sm px-4 py-2 rounded-xl flex items-center gap-1.5">
-          {showForm ? <X size={16} /> : <Plus size={16} />}
-          {showForm ? t.cancel : t.newSub}
+        <button onClick={startNew} className="bg-primary text-white text-sm px-4 py-2 rounded-xl flex items-center gap-1.5">
+          {showForm && !editingId ? <X size={16} /> : <Plus size={16} />}
+          {showForm && !editingId ? t.cancel : t.newSub}
         </button>
       }
     >
       {showForm && (
         <form onSubmit={handleSubmit} className="card grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <p className="lg:col-span-3 font-semibold text-sm text-neutral-600">{editingId ? t.editTitle : t.newTitle}</p>
           <input required placeholder={t.name} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="border rounded-xl px-3 py-2" />
           <input placeholder={t.specialty} value={form.specialty} onChange={(e) => setForm({ ...form, specialty: e.target.value })} className="border rounded-xl px-3 py-2" />
           <input placeholder={t.phone} value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="border rounded-xl px-3 py-2" />
@@ -79,7 +105,14 @@ export default function ContractorsPage() {
           <input placeholder={t.taxNumber} value={form.taxNumber} onChange={(e) => setForm({ ...form, taxNumber: e.target.value })} className="border rounded-xl px-3 py-2" />
           <input placeholder={t.address} value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} className="border rounded-xl px-3 py-2" />
           {error && <p className="text-danger text-sm lg:col-span-3">{error}</p>}
-          <button disabled={saving} className="bg-primary text-white rounded-xl px-4 py-2 text-sm font-medium lg:col-span-3">{saving ? t.saving : t.save}</button>
+          <div className="lg:col-span-3 flex gap-2">
+            <button disabled={saving} className="bg-primary text-white rounded-xl px-4 py-2 text-sm font-medium">{saving ? t.saving : editingId ? t.saveEdit : t.save}</button>
+            {editingId && (
+              <button type="button" onClick={() => { setEditingId(null); setShowForm(false); }} className="text-sm px-4 py-2 rounded-xl border">
+                {t.cancel}
+              </button>
+            )}
+          </div>
         </form>
       )}
 
@@ -92,11 +125,12 @@ export default function ContractorsPage() {
               <th className="p-3 font-medium">{t.thContracts}</th>
               <th className="p-3 font-medium">{t.thPaid}</th>
               <th className="p-3 font-medium">{t.thRating}</th>
+              <th className="p-3 font-medium"></th>
             </tr>
           </thead>
           <tbody>
-            {loading && <tr><td className="p-4 text-neutral-400" colSpan={5}>{t.loading}</td></tr>}
-            {!loading && subs.length === 0 && <tr><td className="p-4 text-neutral-400" colSpan={5}>{t.empty}</td></tr>}
+            {loading && <tr><td className="p-4 text-neutral-400" colSpan={6}>{t.loading}</td></tr>}
+            {!loading && subs.length === 0 && <tr><td className="p-4 text-neutral-400" colSpan={6}>{t.empty}</td></tr>}
             {subs.map((s) => {
               const totalPaid = s.contracts.reduce((sum: number, c: any) => sum + c.payments.reduce((x: number, p: any) => x + Number(p.amount), 0), 0);
               const avgRating = s.evaluations.length
@@ -109,6 +143,7 @@ export default function ContractorsPage() {
                   <td className="p-3">{s.contracts.length}</td>
                   <td className="p-3">{totalPaid.toLocaleString(localeCode)} {currency}</td>
                   <td className="p-3">{avgRating} / 5</td>
+                  <td className="p-3"><button onClick={() => startEdit(s)} className="text-primary hover:opacity-70"><Pencil size={15} /></button></td>
                 </tr>
               );
             })}

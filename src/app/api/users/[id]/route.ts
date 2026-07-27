@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { logAudit } from "@/lib/audit";
+import bcrypt from "bcryptjs";
 
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
   const session = await getServerSession(authOptions);
@@ -14,11 +15,17 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   const before = await prisma.user.findUnique({ where: { id: params.id } });
   if (!before) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
+  if (body.password && String(body.password).length < 8) {
+    return NextResponse.json({ error: "كلمة المرور لازم تكون 8 حروف على الأقل" }, { status: 400 });
+  }
+
   const user = await prisma.user.update({
     where: { id: params.id },
     data: {
+      name: body.name ?? undefined,
       isActive: body.isActive ?? undefined,
       role: body.role ?? undefined,
+      passwordHash: body.password ? await bcrypt.hash(body.password, 10) : undefined,
     },
     select: { id: true, name: true, email: true, role: true, isActive: true },
   });
