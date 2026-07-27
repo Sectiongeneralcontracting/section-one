@@ -17,6 +17,7 @@ const items = [
   { href: "/purchase-orders", label: "أوامر الشراء", labelEn: "Purchase Orders", icon: ShoppingCart },
   { href: "/inventory", label: "المخازن", labelEn: "Inventory", icon: Warehouse },
   { href: "/equipment", label: "المعدات", labelEn: "Equipment", icon: HardHat },
+  { href: "/contractors", label: "مقاولو الباطن", labelEn: "Contractors", icon: HardHat },
   { href: "/reports", label: "التقارير", labelEn: "Reports", icon: FileBarChart },
   { href: "/users", label: "المستخدمون", labelEn: "Users", icon: UserCog },
   { href: "/settings", label: "الإعدادات", labelEn: "Settings", icon: Settings },
