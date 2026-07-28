@@ -4,7 +4,8 @@ import { useEffect, useState, Fragment } from "react";
 import { AppShell } from "@/components/layout/app-shell";
 import { useLocale } from "@/lib/use-locale";
 import { ROLE_LABELS } from "@/lib/modules";
-import { Sun, Moon } from "lucide-react";
+import { resizeImageToDataUrl } from "@/lib/image-utils";
+import { Sun, Moon, Building2 } from "lucide-react";
 
 const dict = {
   ar: {
@@ -16,6 +17,8 @@ const dict = {
     appearanceTitle: "لون النظام", appearanceDesc: "اختر مظهر النظام: فاتح (أبيض) أو غامق (أسود) بألوان مريحة للعين.",
     light: "فاتح (أبيض)", dark: "غامق (أسود)",
     companyTitle: "بيانات الشركة (تظهر في كل التقارير)",
+    companyLogo: "شعار الشركة", uploadLogo: "رفع شعار", uploading: "جارٍ الرفع...", removeLogo: "إزالة",
+    logoNote: "الشعار ده بيظهر في عروض الأسعار المطبوعة والمُصدَّرة لملف Word.",
     companyName: "اسم الشركة", phone: "الهاتف", email: "البريد الإلكتروني", website: "الموقع الإلكتروني",
     taxNumber: "الرقم الضريبي", commercialReg: "السجل التجاري", address: "العنوان",
     saveCompany: "حفظ بيانات الشركة",
@@ -40,6 +43,8 @@ const dict = {
     appearanceTitle: "System Theme", appearanceDesc: "Choose the system appearance: light (white) or dark (black) with comfortable colors.",
     light: "Light", dark: "Dark",
     companyTitle: "Company Info (shown on all reports)",
+    companyLogo: "Company Logo", uploadLogo: "Upload Logo", uploading: "Uploading...", removeLogo: "Remove",
+    logoNote: "This logo appears on printed and exported (Word) quotations.",
     companyName: "Company Name", phone: "Phone", email: "Email", website: "Website",
     taxNumber: "Tax Number", commercialReg: "Commercial Registry", address: "Address",
     saveCompany: "Save Company Info",
@@ -65,6 +70,7 @@ export default function SettingsPage() {
   const [permSaving, setPermSaving] = useState(false);
   const [permSaved, setPermSaved] = useState("");
   const [company, setCompany] = useState<any>(null);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
   const [settings, setSettings] = useState<any>(null);
   const [savedMsg, setSavedMsg] = useState("");
   const [error, setError] = useState("");
@@ -170,6 +176,20 @@ export default function SettingsPage() {
     });
     if (!res.ok) return setError(t.errSave);
     setSavedMsg(t.savedCompany);
+  }
+
+  async function handleLogoUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingLogo(true);
+    try {
+      const dataUrl = await resizeImageToDataUrl(file, 500, 0.9);
+      setCompany((c: any) => ({ ...c, logoUrl: dataUrl }));
+    } catch {
+      setError(t.errSave);
+    }
+    setUploadingLogo(false);
+    e.target.value = "";
   }
 
   async function saveSettings(e: React.FormEvent) {
@@ -311,6 +331,28 @@ export default function SettingsPage() {
 
       <form onSubmit={saveCompany} className="card space-y-4">
         <h2 className="font-semibold">{t.companyTitle}</h2>
+        <div>
+          <label className="text-sm text-neutral-600 block mb-1">{t.companyLogo}</label>
+          <div className="flex items-center gap-3">
+            {company.logoUrl ? (
+              <img src={company.logoUrl} alt="logo" className="h-20 w-20 object-contain rounded-xl border bg-white" />
+            ) : (
+              <div className="h-20 w-20 rounded-xl border bg-neutral-50 flex items-center justify-center text-neutral-300">
+                <Building2 size={28} />
+              </div>
+            )}
+            <label className="border rounded-xl px-4 py-2 text-sm font-medium cursor-pointer">
+              {uploadingLogo ? t.uploading : t.uploadLogo}
+              <input type="file" accept="image/*" onChange={handleLogoUpload} disabled={uploadingLogo} className="hidden" />
+            </label>
+            {company.logoUrl && (
+              <button type="button" onClick={() => setCompany({ ...company, logoUrl: "" })} className="text-danger text-sm">
+                {t.removeLogo}
+              </button>
+            )}
+          </div>
+          <p className="text-xs text-neutral-400 mt-1">{t.logoNote}</p>
+        </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Field label={t.companyName} value={company.name} onChange={(v) => setCompany({ ...company, name: v })} />
           <Field label={t.phone} value={company.phone} onChange={(v) => setCompany({ ...company, phone: v })} />

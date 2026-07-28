@@ -323,9 +323,8 @@ export default function QuotationDetailPage() {
 
       {/* قسم مخصص للطباعة فقط — بنفس شكل ملف Word المُصدَّر */}
       <div className="hidden print:block" dir="rtl">
-        <div className="flex items-start justify-between mb-8">
+        <div className="flex items-start justify-between mb-2">
           <div className="text-right">
-            <h1 className="text-2xl font-bold mb-1">{locale === "ar" ? "عرض سعر" : "Quotation"}</h1>
             <p className="text-sm font-semibold">{t.offerNumber}: {quotation.quotationNumber}</p>
             <p className="text-xs text-neutral-500">{new Date(quotation.date).toLocaleDateString(localeCode, { year: "numeric", month: "long", day: "numeric" })}</p>
           </div>
@@ -337,6 +336,7 @@ export default function QuotationDetailPage() {
             )}
           </div>
         </div>
+        <h1 className="text-center text-2xl font-bold mb-8">{locale === "ar" ? "عرض سعر" : "Quotation"}</h1>
 
         <p className="font-bold mb-1">{locale === "ar" ? "السادة/" : "Dear"} {quotation.client?.name ?? "—"} {t.dearSir}</p>
         <p className="mb-1">{t.greeting}</p>
@@ -382,7 +382,7 @@ export default function QuotationDetailPage() {
         <p className="text-center font-bold text-lg mt-10 mb-1">{t.hopeApproval}</p>
         <p className="text-center text-sm mb-16">{t.regards}</p>
 
-        <div className="text-right mt-16">
+        <div className="text-left mt-16">
           <p className="text-sm font-bold">{t.techOfficeManager}</p>
           <p className="text-sm">{t.managerName}</p>
         </div>

@@ -60,7 +60,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
     }
   }
 
-  const headerTableWidths = [3400, 6140]; // اللوجو | العنوان ورقم العرض والتاريخ
+  const headerTableWidths = [3400, 6140]; // اللوجو | رقم العرض والتاريخ
   const headerTable = new Table({
     columnWidths: headerTableWidths,
     width: { size: 9540, type: WidthType.DXA },
@@ -79,7 +79,6 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
             width: { size: headerTableWidths[1], type: WidthType.DXA },
             verticalAlign: VerticalAlign.CENTER,
             children: [
-              rtlPara([new TextRun({ text: "عرض سعر", bold: true, size: 32 })], { alignment: AlignmentType.RIGHT }),
               rtlPara([new TextRun({ text: `رقم العرض: ${quotation.quotationNumber}`, bold: true, size: 20 })], { alignment: AlignmentType.RIGHT }),
               rtlPara([new TextRun({ text: fmtDate(quotation.date), size: 16, color: "888888" })], { alignment: AlignmentType.RIGHT }),
             ],
@@ -174,7 +173,8 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
         },
         children: [
           headerTable,
-          new Paragraph({ children: [], spacing: { after: 300 } }),
+          new Paragraph({ children: [], spacing: { after: 100 } }),
+          rtlPara([new TextRun({ text: "عرض سعر", bold: true, size: 32 })], { alignment: AlignmentType.CENTER, spacing: { after: 400 } }),
 
           rtlPara(
             [new TextRun({ text: `السادة/ ${quotation.client.name}                                                     المحترمين،،،`, bold: true, size: 22 })],
@@ -216,8 +216,8 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
             { alignment: AlignmentType.CENTER, spacing: { after: 600 } }
           ),
 
-          rtlPara([new TextRun({ text: "مدير المكتب الفني", bold: true, size: 20 })], { alignment: AlignmentType.RIGHT }),
-          rtlPara([new TextRun({ text: "م. اسماء محمود", size: 20 })], { alignment: AlignmentType.RIGHT }),
+          rtlPara([new TextRun({ text: "مدير المكتب الفني", bold: true, size: 20 })], { alignment: AlignmentType.LEFT }),
+          rtlPara([new TextRun({ text: "م. اسماء محمود", size: 20 })], { alignment: AlignmentType.LEFT }),
         ],
       },
     ],
