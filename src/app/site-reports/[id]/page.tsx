@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { AppShell } from "@/components/layout/app-shell";
 import { useLocale } from "@/lib/use-locale";
-import { Plus, X, Trash2, Users, HardHat, Package, Camera } from "lucide-react";
+import { Plus, X, Trash2, Pencil, Users, HardHat, Package, Camera } from "lucide-react";
 
 const dict = {
   ar: {
@@ -25,6 +25,8 @@ const dict = {
     photosTitle: "صور الموقع", uploadPhoto: "رفع صورة", caption: "وصف الصورة (اختياري)", noPhotos: "لا يوجد صور مرفوعة بعد.",
     uploading: "جارٍ الرفع...", deletePhoto: "حذف", confirmDeletePhoto: "تأكيد حذف الصورة؟",
     notes: "ملاحظات", saving: "جارٍ الحفظ...",
+    saveEdit: "حفظ", cancelEdit: "إلغاء", errEdit: "تعذر الحفظ",
+    confirmDeleteRow: "تأكيد الحذف؟",
   },
   en: {
     loading: "Loading...", project: "Project", date: "Date",
@@ -40,6 +42,8 @@ const dict = {
     photosTitle: "Site Photos", uploadPhoto: "Upload Photo", caption: "Caption (optional)", noPhotos: "No photos uploaded yet.",
     uploading: "Uploading...", deletePhoto: "Delete", confirmDeletePhoto: "Confirm deleting this photo?",
     notes: "Notes", saving: "Saving...",
+    saveEdit: "Save", cancelEdit: "Cancel", errEdit: "Failed to save",
+    confirmDeleteRow: "Confirm deletion?",
   },
 };
 
@@ -95,6 +99,13 @@ export default function SiteReportDetailPage() {
   const [materialError, setMaterialError] = useState("");
 
   const [uploading, setUploading] = useState(false);
+
+  const [editingWorkerId, setEditingWorkerId] = useState<string | null>(null);
+  const [editWorkerForm, setEditWorkerForm] = useState({ trade: "", count: 1, notes: "" });
+  const [editingEquipmentId, setEditingEquipmentId] = useState<string | null>(null);
+  const [editEquipmentForm, setEditEquipmentForm] = useState({ customName: "", hoursUsed: "", notes: "" });
+  const [editingMaterialId, setEditingMaterialId] = useState<string | null>(null);
+  const [editMaterialForm, setEditMaterialForm] = useState({ customName: "", quantity: 0, notes: "" });
   const [photoCaption, setPhotoCaption] = useState("");
 
   async function load() {
@@ -183,6 +194,72 @@ export default function SiteReportDetailPage() {
     load();
   }
 
+  // --- تعديل/حذف العمال ---
+  function startEditWorker(w: any) {
+    setEditingWorkerId(w.id);
+    setEditWorkerForm({ trade: w.trade, count: w.count, notes: w.notes ?? "" });
+  }
+  async function saveEditedWorker(workerId: string) {
+    const res = await fetch(`/api/site-workers/${workerId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(editWorkerForm),
+    });
+    if (!res.ok) return alert((await res.json()).error ?? t.errEdit);
+    setEditingWorkerId(null);
+    load();
+  }
+  async function removeWorker(workerId: string) {
+    if (!confirm(t.confirmDeleteRow)) return;
+    const res = await fetch(`/api/site-workers/${workerId}`, { method: "DELETE" });
+    if (!res.ok) return alert((await res.json()).error ?? t.errEdit);
+    load();
+  }
+
+  // --- تعديل/حذف المعدات ---
+  function startEditEquipment(eq: any) {
+    setEditingEquipmentId(eq.id);
+    setEditEquipmentForm({ customName: eq.customName ?? "", hoursUsed: eq.hoursUsed ?? "", notes: eq.notes ?? "" });
+  }
+  async function saveEditedEquipment(logId: string) {
+    const res = await fetch(`/api/site-equipment-logs/${logId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ...editEquipmentForm, hoursUsed: editEquipmentForm.hoursUsed ? Number(editEquipmentForm.hoursUsed) : undefined }),
+    });
+    if (!res.ok) return alert((await res.json()).error ?? t.errEdit);
+    setEditingEquipmentId(null);
+    load();
+  }
+  async function removeEquipmentLog(logId: string) {
+    if (!confirm(t.confirmDeleteRow)) return;
+    const res = await fetch(`/api/site-equipment-logs/${logId}`, { method: "DELETE" });
+    if (!res.ok) return alert((await res.json()).error ?? t.errEdit);
+    load();
+  }
+
+  // --- تعديل/حذف المواد ---
+  function startEditMaterial(m: any) {
+    setEditingMaterialId(m.id);
+    setEditMaterialForm({ customName: m.customName ?? "", quantity: Number(m.quantity), notes: m.notes ?? "" });
+  }
+  async function saveEditedMaterial(logId: string) {
+    const res = await fetch(`/api/site-materials/${logId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(editMaterialForm),
+    });
+    if (!res.ok) return alert((await res.json()).error ?? t.errEdit);
+    setEditingMaterialId(null);
+    load();
+  }
+  async function removeMaterialLog(logId: string) {
+    if (!confirm(t.confirmDeleteRow)) return;
+    const res = await fetch(`/api/site-materials/${logId}`, { method: "DELETE" });
+    if (!res.ok) return alert((await res.json()).error ?? t.errEdit);
+    load();
+  }
+
   async function handlePhotoUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -258,16 +335,32 @@ export default function SiteReportDetailPage() {
         <table className="w-full text-sm">
           <tbody>
             {report.workerAttendance.length === 0 && <tr><td className="p-4 text-neutral-400">{t.noWorkers}</td></tr>}
-            {report.workerAttendance.map((w: any) => (
-              <tr key={w.id} className="border-t">
-                <td className="p-3 font-medium">{w.trade}</td>
-                <td className="p-3">{w.count}</td>
-                <td className="p-3 text-neutral-500">{w.notes || "—"}</td>
-              </tr>
-            ))}
+            {report.workerAttendance.map((w: any) =>
+              editingWorkerId === w.id ? (
+                <tr key={w.id} className="border-t bg-neutral-50">
+                  <td className="p-2"><input value={editWorkerForm.trade} onChange={(e) => setEditWorkerForm({ ...editWorkerForm, trade: e.target.value })} className="w-full border rounded-lg px-2 py-1" /></td>
+                  <td className="p-2"><input type="number" min={1} value={editWorkerForm.count} onChange={(e) => setEditWorkerForm({ ...editWorkerForm, count: Number(e.target.value) })} className="w-full border rounded-lg px-2 py-1" /></td>
+                  <td className="p-2"><input value={editWorkerForm.notes} onChange={(e) => setEditWorkerForm({ ...editWorkerForm, notes: e.target.value })} className="w-full border rounded-lg px-2 py-1" /></td>
+                  <td className="p-2 flex gap-2">
+                    <button onClick={() => saveEditedWorker(w.id)} className="text-success text-xs">{t.saveEdit}</button>
+                    <button onClick={() => setEditingWorkerId(null)} className="text-neutral-500 text-xs">{t.cancelEdit}</button>
+                  </td>
+                </tr>
+              ) : (
+                <tr key={w.id} className="border-t">
+                  <td className="p-3 font-medium">{w.trade}</td>
+                  <td className="p-3">{w.count}</td>
+                  <td className="p-3 text-neutral-500">{w.notes || "—"}</td>
+                  <td className="p-3 flex gap-2">
+                    <button onClick={() => startEditWorker(w)} className="text-primary hover:opacity-70"><Pencil size={14} /></button>
+                    <button onClick={() => removeWorker(w.id)} className="text-danger hover:opacity-70"><Trash2 size={14} /></button>
+                  </td>
+                </tr>
+              )
+            )}
           </tbody>
           {report.workerAttendance.length > 0 && (
-            <tfoot><tr className="border-t bg-neutral-50 font-semibold"><td className="p-3" colSpan={2}>{t.totalWorkers}: {report.workerAttendance.reduce((s: number, w: any) => s + w.count, 0)}</td><td /></tr></tfoot>
+            <tfoot><tr className="border-t bg-neutral-50 font-semibold"><td className="p-3" colSpan={2}>{t.totalWorkers}: {report.workerAttendance.reduce((s: number, w: any) => s + w.count, 0)}</td><td colSpan={2} /></tr></tfoot>
           )}
         </table>
       </div>
@@ -296,13 +389,29 @@ export default function SiteReportDetailPage() {
         <table className="w-full text-sm">
           <tbody>
             {report.equipmentLogs.length === 0 && <tr><td className="p-4 text-neutral-400">{t.noEquipment}</td></tr>}
-            {report.equipmentLogs.map((eq: any) => (
-              <tr key={eq.id} className="border-t">
-                <td className="p-3 font-medium">{eq.equipment?.name ?? eq.customName}</td>
-                <td className="p-3">{eq.hoursUsed ? `${eq.hoursUsed} ${locale === "ar" ? "ساعة" : "hrs"}` : "—"}</td>
-                <td className="p-3 text-neutral-500">{eq.notes || "—"}</td>
-              </tr>
-            ))}
+            {report.equipmentLogs.map((eq: any) =>
+              editingEquipmentId === eq.id ? (
+                <tr key={eq.id} className="border-t bg-neutral-50">
+                  <td className="p-2 text-neutral-400">{eq.equipment?.name ?? <input value={editEquipmentForm.customName} onChange={(e) => setEditEquipmentForm({ ...editEquipmentForm, customName: e.target.value })} className="w-full border rounded-lg px-2 py-1" />}</td>
+                  <td className="p-2"><input type="number" step="0.5" value={editEquipmentForm.hoursUsed} onChange={(e) => setEditEquipmentForm({ ...editEquipmentForm, hoursUsed: e.target.value })} className="w-full border rounded-lg px-2 py-1" /></td>
+                  <td className="p-2"><input value={editEquipmentForm.notes} onChange={(e) => setEditEquipmentForm({ ...editEquipmentForm, notes: e.target.value })} className="w-full border rounded-lg px-2 py-1" /></td>
+                  <td className="p-2 flex gap-2">
+                    <button onClick={() => saveEditedEquipment(eq.id)} className="text-success text-xs">{t.saveEdit}</button>
+                    <button onClick={() => setEditingEquipmentId(null)} className="text-neutral-500 text-xs">{t.cancelEdit}</button>
+                  </td>
+                </tr>
+              ) : (
+                <tr key={eq.id} className="border-t">
+                  <td className="p-3 font-medium">{eq.equipment?.name ?? eq.customName}</td>
+                  <td className="p-3">{eq.hoursUsed ? `${eq.hoursUsed} ${locale === "ar" ? "ساعة" : "hrs"}` : "—"}</td>
+                  <td className="p-3 text-neutral-500">{eq.notes || "—"}</td>
+                  <td className="p-3 flex gap-2">
+                    <button onClick={() => startEditEquipment(eq)} className="text-primary hover:opacity-70"><Pencil size={14} /></button>
+                    <button onClick={() => removeEquipmentLog(eq.id)} className="text-danger hover:opacity-70"><Trash2 size={14} /></button>
+                  </td>
+                </tr>
+              )
+            )}
           </tbody>
         </table>
       </div>
@@ -337,14 +446,31 @@ export default function SiteReportDetailPage() {
         <table className="w-full text-sm">
           <tbody>
             {report.materialLogs.length === 0 && <tr><td className="p-4 text-neutral-400">{t.noMaterials}</td></tr>}
-            {report.materialLogs.map((m: any) => (
-              <tr key={m.id} className="border-t">
-                <td className="p-3 font-medium">{m.item?.name ?? m.customName}</td>
-                <td className="p-3">{Number(m.quantity).toLocaleString(localeCode)} {m.unit || m.item?.unit || ""}</td>
-                <td className="p-3">{m.stockMovementId ? <span className="text-xs bg-success/10 text-success px-2 py-0.5 rounded-full">{locale === "ar" ? "اتخصم من المخزن" : "Deducted from stock"}</span> : "—"}</td>
-                <td className="p-3 text-neutral-500">{m.notes || "—"}</td>
-              </tr>
-            ))}
+            {report.materialLogs.map((m: any) =>
+              editingMaterialId === m.id ? (
+                <tr key={m.id} className="border-t bg-neutral-50">
+                  <td className="p-2 text-neutral-400">{m.item?.name ?? <input value={editMaterialForm.customName} onChange={(e) => setEditMaterialForm({ ...editMaterialForm, customName: e.target.value })} className="w-full border rounded-lg px-2 py-1" />}</td>
+                  <td className="p-2"><input type="number" step="0.001" value={editMaterialForm.quantity} onChange={(e) => setEditMaterialForm({ ...editMaterialForm, quantity: Number(e.target.value) })} className="w-full border rounded-lg px-2 py-1" /></td>
+                  <td className="p-2"></td>
+                  <td className="p-2"><input value={editMaterialForm.notes} onChange={(e) => setEditMaterialForm({ ...editMaterialForm, notes: e.target.value })} className="w-full border rounded-lg px-2 py-1" /></td>
+                  <td className="p-2 flex gap-2">
+                    <button onClick={() => saveEditedMaterial(m.id)} className="text-success text-xs">{t.saveEdit}</button>
+                    <button onClick={() => setEditingMaterialId(null)} className="text-neutral-500 text-xs">{t.cancelEdit}</button>
+                  </td>
+                </tr>
+              ) : (
+                <tr key={m.id} className="border-t">
+                  <td className="p-3 font-medium">{m.item?.name ?? m.customName}</td>
+                  <td className="p-3">{Number(m.quantity).toLocaleString(localeCode)} {m.unit || m.item?.unit || ""}</td>
+                  <td className="p-3">{m.stockMovementId ? <span className="text-xs bg-success/10 text-success px-2 py-0.5 rounded-full">{locale === "ar" ? "اتخصم من المخزن" : "Deducted from stock"}</span> : "—"}</td>
+                  <td className="p-3 text-neutral-500">{m.notes || "—"}</td>
+                  <td className="p-3 flex gap-2">
+                    <button onClick={() => startEditMaterial(m)} className="text-primary hover:opacity-70"><Pencil size={14} /></button>
+                    <button onClick={() => removeMaterialLog(m.id)} className="text-danger hover:opacity-70"><Trash2 size={14} /></button>
+                  </td>
+                </tr>
+              )
+            )}
           </tbody>
         </table>
       </div>

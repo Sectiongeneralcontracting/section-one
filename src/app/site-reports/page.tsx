@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { AppShell } from "@/components/layout/app-shell";
 import { useLocale } from "@/lib/use-locale";
-import { Plus, X, Users, HardHat, Package, Camera } from "lucide-react";
+import { Plus, X, Users, HardHat, Package, Camera, Trash2 } from "lucide-react";
 
 const dict = {
   ar: {
@@ -15,6 +15,8 @@ const dict = {
     filterProject: "فلترة بالمشروع",
     thDate: "التاريخ", thProject: "المشروع", thWorkers: "العمال", thEquipment: "المعدات", thMaterials: "المواد", thPhotos: "الصور",
     loading: "جارٍ التحميل...", empty: "لا يوجد تقارير يومية مسجلة بعد.",
+    confirmDelete: "تأكيد حذف التقرير اليومي بالكامل (كل العمال والمعدات والمواد والصور فيه)؟ العملية لا يمكن التراجع عنها.",
+    errDelete: "تعذر الحذف",
   },
   en: {
     title: "Site Management — Daily Reports", newReport: "New Daily Report", cancel: "Cancel",
@@ -24,6 +26,8 @@ const dict = {
     filterProject: "Filter by project",
     thDate: "Date", thProject: "Project", thWorkers: "Workers", thEquipment: "Equipment", thMaterials: "Materials", thPhotos: "Photos",
     loading: "Loading...", empty: "No daily reports recorded yet.",
+    confirmDelete: "Confirm deleting this entire daily report (all its workers, equipment, materials, and photos)? This cannot be undone.",
+    errDelete: "Failed to delete",
   },
 };
 
@@ -49,6 +53,13 @@ export default function SiteReportsPage() {
   }
 
   useEffect(() => { load(); }, []);
+
+  async function removeReport(reportId: string) {
+    if (!confirm(t.confirmDelete)) return;
+    const res = await fetch(`/api/site-reports/${reportId}`, { method: "DELETE" });
+    if (!res.ok) return alert((await res.json()).error ?? t.errDelete);
+    load();
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -129,11 +140,12 @@ export default function SiteReportsPage() {
               <th className="p-3 font-medium">{t.thEquipment}</th>
               <th className="p-3 font-medium">{t.thMaterials}</th>
               <th className="p-3 font-medium">{t.thPhotos}</th>
+              <th className="p-3 font-medium"></th>
             </tr>
           </thead>
           <tbody>
-            {loading && <tr><td className="p-4 text-neutral-400" colSpan={6}>{t.loading}</td></tr>}
-            {!loading && filteredReports.length === 0 && <tr><td className="p-4 text-neutral-400" colSpan={6}>{t.empty}</td></tr>}
+            {loading && <tr><td className="p-4 text-neutral-400" colSpan={7}>{t.loading}</td></tr>}
+            {!loading && filteredReports.length === 0 && <tr><td className="p-4 text-neutral-400" colSpan={7}>{t.empty}</td></tr>}
             {filteredReports.map((r) => (
               <tr key={r.id} className="border-t hover:bg-neutral-50">
                 <td className="p-3 font-medium"><Link href={`/site-reports/${r.id}`} className="text-primary hover:underline">{new Date(r.date).toLocaleDateString(localeCode)}</Link></td>
@@ -142,6 +154,7 @@ export default function SiteReportsPage() {
                 <td className="p-3 flex items-center gap-1"><HardHat size={14} className="text-neutral-400" /> {r.equipmentLogs.length}</td>
                 <td className="p-3 flex items-center gap-1"><Package size={14} className="text-neutral-400" /> {r.materialLogs.length}</td>
                 <td className="p-3 flex items-center gap-1"><Camera size={14} className="text-neutral-400" /> {r.photos.length}</td>
+                <td className="p-3"><button onClick={() => removeReport(r.id)} className="text-danger hover:opacity-70"><Trash2 size={14} /></button></td>
               </tr>
             ))}
           </tbody>
