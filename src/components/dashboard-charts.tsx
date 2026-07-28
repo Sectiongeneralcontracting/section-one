@@ -10,7 +10,6 @@ import {
   Tooltip,
   Legend,
   CartesianGrid,
-  LabelList,
   PieChart,
   Pie,
   Cell,
@@ -58,70 +57,26 @@ export function ClientProjectsChart({ data }: { data: { name: string; value: num
   const currency = locale === "ar" ? "ج.م" : "EGP";
   const fmt = (v: number) => v.toLocaleString(localeCode);
 
-  const chartData = data.map((d) => ({
-    ...d,
-    paidPct: d.value > 0 ? Math.round((d.paid / d.value) * 100) : 0,
-  }));
-  const rowHeight = 46;
-  const height = Math.max(chartData.length * rowHeight + 60, 200);
-
   return (
     <div className="card">
-      <div className="flex items-center justify-between mb-1">
-        <p className="font-semibold">{locale === "ar" ? "المدفوع والمتبقي لكل مشروع" : "Paid vs Remaining per Project"}</p>
-        <p className="text-xs text-neutral-400">{locale === "ar" ? "قيمة كل شريط = قيمة العقد الكاملة" : "Full bar length = total contract value"}</p>
-      </div>
-      {chartData.length === 0 ? (
+      <p className="font-semibold mb-4">{locale === "ar" ? "قيمة المشروع مقابل المدفوع من العميل" : "Project Value vs Paid by Client"}</p>
+      {data.length === 0 ? (
         <p className="text-sm text-neutral-400 py-8 text-center">{locale === "ar" ? "لا يوجد بيانات." : "No data."}</p>
       ) : (
-        <ResponsiveContainer width="100%" height={height}>
-          <BarChart
-            data={chartData}
-            layout="vertical"
-            barCategoryGap={14}
-            margin={{ top: 8, right: 48, bottom: 8, left: 8 }}
-          >
-            <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#EEE" />
-            <XAxis type="number" tick={{ fontSize: 11, fill: "#8A8F94" }} tickFormatter={fmt} axisLine={false} tickLine={false} />
-            <YAxis
-              type="category"
-              dataKey="name"
-              width={150}
-              tick={{ fontSize: 12, fill: "#25282B" }}
-              axisLine={false}
-              tickLine={false}
-            />
+        <ResponsiveContainer width="100%" height={320}>
+          <BarChart data={data} barGap={0} barCategoryGap="28%" margin={{ top: 8, right: 8, bottom: 8, left: 8 }}>
+            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#EEE" />
+            <XAxis dataKey="name" tick={{ fontSize: 12, fill: "#25282B" }} axisLine={{ stroke: "#DDD" }} tickLine={false} />
+            <YAxis tick={{ fontSize: 11, fill: "#8A8F94" }} tickFormatter={fmt} axisLine={false} tickLine={false} />
             <Tooltip
               cursor={{ fill: "rgba(0,0,0,0.03)" }}
               formatter={(v: number, key: string) => [`${fmt(v)} ${currency}`, key]}
               labelStyle={{ fontWeight: 600, marginBottom: 4 }}
               contentStyle={{ borderRadius: 10, border: "1px solid #eee", fontSize: 12 }}
             />
-            <Legend
-              verticalAlign="top"
-              align="right"
-              iconType="circle"
-              wrapperStyle={{ fontSize: 12, paddingBottom: 8 }}
-            />
-            <Bar dataKey="paid" name={locale === "ar" ? "المدفوع" : "Paid"} stackId="a" fill="#2E7D32" radius={[6, 0, 0, 6]} barSize={22}>
-              <LabelList
-                dataKey="paidPct"
-                position="insideLeft"
-                formatter={(v: number) => (v > 12 ? `${v}%` : "")}
-                fill="#fff"
-                fontSize={11}
-                fontWeight={600}
-              />
-            </Bar>
-            <Bar dataKey="remaining" name={locale === "ar" ? "المتبقي" : "Remaining"} stackId="a" fill="#E8B4A0" radius={[0, 6, 6, 0]} barSize={22}>
-              <LabelList
-                dataKey="value"
-                position="right"
-                formatter={(v: number) => fmt(v)}
-                fill="#565B60"
-                fontSize={11}
-              />
-            </Bar>
+            <Legend verticalAlign="top" align="right" iconType="circle" wrapperStyle={{ fontSize: 12, paddingBottom: 12 }} />
+            <Bar dataKey="value" name={locale === "ar" ? "القيمة" : "Value"} fill="#565B60" radius={[4, 4, 0, 0]} />
+            <Bar dataKey="paid" name={locale === "ar" ? "المدفوع" : "Paid"} fill="#2E7D32" radius={[4, 4, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
       )}
