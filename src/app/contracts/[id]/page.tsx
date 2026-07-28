@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { AppShell } from "@/components/layout/app-shell";
 import { useLocale } from "@/lib/use-locale";
-import { Plus, X } from "lucide-react";
+import { Plus, X, Pencil } from "lucide-react";
 
 const statusLabels: Record<string, { ar: string; en: string }> = {
   DRAFT: { ar: "مسودة", en: "Draft" },
@@ -23,7 +23,7 @@ const dict = {
   ar: {
     loading: "جارٍ التحميل...", contractTitle: "عقد", project: "المشروع", value: "قيمة العقد",
     retention: "ضمان حسن التنفيذ", advance: "الدفعة المقدمة",
-    boqTitle: "جدول الكميات (BOQ)", newItem: "بند جديد", codePh: "الكود", descPh: "الوصف",
+    boqTitle: "جدول الكميات (BOQ)", newItem: "بند جديد", codePh: "الكود", descPh: "الوصف", cancel: "إلغاء",
     unitPh: "الوحدة", qtyPh: "الكمية", pricePh: "سعر الوحدة", saveItem: "حفظ البند",
     thCode: "الكود", thDesc: "الوصف", thUnit: "الوحدة", thQty: "الكمية", thPrice: "سعر الوحدة", thTotal: "الإجمالي",
     delete: "حذف", noItems: "لا يوجد بنود بعد.", total: "الإجمالي",
@@ -38,7 +38,7 @@ const dict = {
   en: {
     loading: "Loading...", contractTitle: "Contract", project: "Project", value: "Contract Value",
     retention: "Retention", advance: "Advance Payment",
-    boqTitle: "Bill of Quantities (BOQ)", newItem: "New Item", codePh: "Code", descPh: "Description",
+    boqTitle: "Bill of Quantities (BOQ)", newItem: "New Item", codePh: "Code", descPh: "Description", cancel: "Cancel",
     unitPh: "Unit", qtyPh: "Quantity", pricePh: "Unit Price", saveItem: "Save Item",
     thCode: "Code", thDesc: "Description", thUnit: "Unit", thQty: "Qty", thPrice: "Unit Price", thTotal: "Total",
     delete: "Delete", noItems: "No items yet.", total: "Total",
@@ -63,6 +63,9 @@ export default function ContractDetailPage() {
   const [saving, setSaving] = useState(false);
 
   const [boqForm, setBoqForm] = useState({ code: "", description: "", unit: "", quantity: 0, unitPrice: 0 });
+  const [editingBoqId, setEditingBoqId] = useState<string | null>(null);
+  const [editBoqForm, setEditBoqForm] = useState({ code: "", description: "", unit: "", quantity: 0, unitPrice: 0 });
+  const [boqActionError, setBoqActionError] = useState("");
   const [certForm, setCertForm] = useState({ periodFrom: "", periodTo: "", cumulativePct: 0, taxPct: 0, notes: "" });
 
   async function load() {
@@ -92,7 +95,33 @@ export default function ContractDetailPage() {
 
   async function deleteBoq(itemId: string) {
     if (!confirm(t.confirmDeleteItem)) return;
-    await fetch(`/api/boq-items/${itemId}`, { method: "DELETE" });
+    setBoqActionError("");
+    const res = await fetch(`/api/boq-items/${itemId}`, { method: "DELETE" });
+    if (!res.ok) {
+      setBoqActionError((await res.json()).error ?? t.errAddItem);
+      return;
+    }
+    load();
+  }
+
+  function startEditBoq(i: any) {
+    setEditingBoqId(i.id);
+    setEditBoqForm({ code: i.code, description: i.description, unit: i.unit, quantity: Number(i.quantity), unitPrice: Number(i.unitPrice) });
+    setBoqActionError("");
+  }
+
+  async function saveEditedBoq(itemId: string) {
+    setBoqActionError("");
+    const res = await fetch(`/api/boq-items/${itemId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(editBoqForm),
+    });
+    if (!res.ok) {
+      setBoqActionError((await res.json()).error ?? t.errAddItem);
+      return;
+    }
+    setEditingBoqId(null);
     load();
   }
 
@@ -158,6 +187,7 @@ export default function ContractDetailPage() {
         </form>
       )}
       <div className="card !p-0 overflow-hidden">
+        {boqActionError && <p className="text-danger text-sm p-3 border-b">{boqActionError}</p>}
         <table className="w-full text-sm">
           <thead className="bg-neutral-50 text-neutral-500">
             <tr className="text-right">
@@ -168,17 +198,35 @@ export default function ContractDetailPage() {
           </thead>
           <tbody>
             {contract.boqItems.length === 0 && <tr><td className="p-4 text-neutral-400" colSpan={7}>{t.noItems}</td></tr>}
-            {contract.boqItems.map((i: any) => (
-              <tr key={i.id} className="border-t">
-                <td className="p-3">{i.code}</td>
-                <td className="p-3">{i.description}</td>
-                <td className="p-3">{i.unit}</td>
-                <td className="p-3">{Number(i.quantity).toLocaleString(localeCode)}</td>
-                <td className="p-3">{Number(i.unitPrice).toLocaleString(localeCode)}</td>
-                <td className="p-3">{(Number(i.quantity) * Number(i.unitPrice)).toLocaleString(localeCode)}</td>
-                <td className="p-3"><button onClick={() => deleteBoq(i.id)} className="text-danger text-xs">{t.delete}</button></td>
-              </tr>
-            ))}
+            {contract.boqItems.map((i: any) =>
+              editingBoqId === i.id ? (
+                <tr key={i.id} className="border-t bg-neutral-50">
+                  <td className="p-2"><input value={editBoqForm.code} onChange={(e) => setEditBoqForm({ ...editBoqForm, code: e.target.value })} className="w-full border rounded-lg px-2 py-1" /></td>
+                  <td className="p-2"><input value={editBoqForm.description} onChange={(e) => setEditBoqForm({ ...editBoqForm, description: e.target.value })} className="w-full border rounded-lg px-2 py-1" /></td>
+                  <td className="p-2"><input value={editBoqForm.unit} onChange={(e) => setEditBoqForm({ ...editBoqForm, unit: e.target.value })} className="w-full border rounded-lg px-2 py-1" /></td>
+                  <td className="p-2"><input type="number" step="0.001" value={editBoqForm.quantity} onChange={(e) => setEditBoqForm({ ...editBoqForm, quantity: Number(e.target.value) })} className="w-full border rounded-lg px-2 py-1" /></td>
+                  <td className="p-2"><input type="number" step="0.01" value={editBoqForm.unitPrice} onChange={(e) => setEditBoqForm({ ...editBoqForm, unitPrice: Number(e.target.value) })} className="w-full border rounded-lg px-2 py-1" /></td>
+                  <td className="p-2 text-neutral-500">{(editBoqForm.quantity * editBoqForm.unitPrice).toLocaleString(localeCode)}</td>
+                  <td className="p-2 flex gap-2">
+                    <button onClick={() => saveEditedBoq(i.id)} className="text-success text-xs font-medium">{t.saveItem}</button>
+                    <button onClick={() => setEditingBoqId(null)} className="text-neutral-500 text-xs">{t.cancel}</button>
+                  </td>
+                </tr>
+              ) : (
+                <tr key={i.id} className="border-t">
+                  <td className="p-3">{i.code}</td>
+                  <td className="p-3">{i.description}</td>
+                  <td className="p-3">{i.unit}</td>
+                  <td className="p-3">{Number(i.quantity).toLocaleString(localeCode)}</td>
+                  <td className="p-3">{Number(i.unitPrice).toLocaleString(localeCode)}</td>
+                  <td className="p-3">{(Number(i.quantity) * Number(i.unitPrice)).toLocaleString(localeCode)}</td>
+                  <td className="p-3 flex gap-2">
+                    <button onClick={() => startEditBoq(i)} className="text-primary hover:opacity-70"><Pencil size={14} /></button>
+                    <button onClick={() => deleteBoq(i.id)} className="text-danger text-xs">{t.delete}</button>
+                  </td>
+                </tr>
+              )
+            )}
           </tbody>
           {contract.boqItems.length > 0 && (
             <tfoot><tr className="border-t bg-neutral-50 font-semibold"><td className="p-3" colSpan={5}>{t.total}</td><td className="p-3">{boqTotal.toLocaleString(localeCode)} {currency}</td><td /></tr></tfoot>

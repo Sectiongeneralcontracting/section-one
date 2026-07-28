@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { logAudit } from "@/lib/audit";
+import { syncProjectValueFromBoq } from "@/lib/boq-sync";
 
 const boqSchema = z.object({
   code: z.string().min(1),
@@ -25,7 +26,14 @@ export async function POST(req: Request, { params }: { params: { id: string } })
   if (!parsed.success)
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
 
+  const contract = await prisma.contract.findUnique({ where: { id: params.id }, include: { project: true } });
+  if (!contract) return NextResponse.json({ error: "العقد غير موجود" }, { status: 404 });
+  if (contract.project.status === "CLOSED") {
+    return NextResponse.json({ error: "لا يمكن تعديل بنود عقد مشروع مغلق" }, { status: 400 });
+  }
+
   const item = await prisma.boqItem.create({ data: { ...parsed.data, contractId: params.id } });
+  const newProjectValue = await syncProjectValueFromBoq(prisma, params.id);
 
   await logAudit({
     userId: (session.user as any).id,
@@ -35,5 +43,5 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     after: item,
   });
 
-  return NextResponse.json(item, { status: 201 });
+  return NextResponse.json({ ...item, newProjectValue }, { status: 201 });
 }
