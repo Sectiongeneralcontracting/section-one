@@ -151,7 +151,15 @@ export async function DELETE(_req: Request, { params }: { params: { id: string }
   if (project.status === "CLOSED")
     return NextResponse.json({ error: "لا يمكن حذف مشروع مغلق" }, { status: 403 });
 
-  await prisma.project.delete({ where: { id: params.id } });
+  try {
+    await prisma.project.delete({ where: { id: params.id } });
+  } catch {
+    return NextResponse.json(
+      { error: "تعذر حذف المشروع لأن له بيانات مرتبطة (عقد، مصروفات، مستخلصات...) — عطّله بدل الحذف لو محتاج تخفيه من القوائم" },
+      { status: 400 }
+    );
+  }
+
   await logAudit({
     userId: (session.user as any).id,
     action: "PROJECT_DELETED",

@@ -19,6 +19,8 @@ const categoryLabels: Record<string, { ar: string; en: string }> = {
 const dict = {
   ar: {
     loading: "جارٍ التحميل...", edit: "تعديل", cancelEdit: "إلغاء التعديل",
+    deleteProject: "حذف المشروع", confirmDeleteProject: "تأكيد حذف المشروع نهائيًا؟ العملية لا يمكن التراجع عنها.",
+    errDeleteProject: "تعذر حذف المشروع",
     close: "إغلاق المشروع", reopen: "إعادة فتح", backToProjects: "رجوع للمشاريع",
     client: "العميل", value: "قيمة العقد", totalExpenses: "إجمالي المصروفات", netProfit: "صافي الربح",
     editTitle: "تعديل بيانات المشروع", name: "اسم المشروع", description: "وصف المشروع",
@@ -67,6 +69,8 @@ const dict = {
   },
   en: {
     loading: "Loading...", edit: "Edit", cancelEdit: "Cancel Edit",
+    deleteProject: "Delete Project", confirmDeleteProject: "Confirm permanently deleting this project? This cannot be undone.",
+    errDeleteProject: "Failed to delete project",
     close: "Close Project", reopen: "Reopen", backToProjects: "Back to Projects",
     client: "Client", value: "Contract Value", totalExpenses: "Total Expenses", netProfit: "Net Profit",
     editTitle: "Edit Project Info", name: "Project Name", description: "Project Description",
@@ -427,6 +431,13 @@ export default function ProjectDetailPage() {
     load();
   }
 
+  async function removeProject() {
+    if (!confirm(t.confirmDeleteProject)) return;
+    const res = await fetch(`/api/projects/${id}`, { method: "DELETE" });
+    if (!res.ok) return alert((await res.json()).error ?? t.errDeleteProject);
+    router.push("/projects");
+  }
+
   async function reopenProject() {
     if (!confirm(t.confirmReopen)) return;
     const res = await fetch(`/api/projects/${id}`, {
@@ -456,6 +467,11 @@ export default function ProjectDetailPage() {
           {project.status !== "CLOSED" && (
             <button onClick={() => setEditingProject((v) => !v)} className="border text-sm px-4 py-2 rounded-xl">
               {editingProject ? t.cancelEdit : t.edit}
+            </button>
+          )}
+          {project.status !== "CLOSED" && (
+            <button onClick={removeProject} className="border border-danger text-danger text-sm px-4 py-2 rounded-xl flex items-center gap-1.5">
+              <Trash2 size={16} /> {t.deleteProject}
             </button>
           )}
           {project.status !== "CLOSED" ? (

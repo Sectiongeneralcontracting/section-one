@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { AppShell } from "@/components/layout/app-shell";
 import { useLocale } from "@/lib/use-locale";
 import { Plus, X, Pencil, Trash2 } from "lucide-react";
@@ -34,6 +34,11 @@ const dict = {
     thRetention: "الضمان", thAdvanceRecovery: "استرداد الدفعة", thNet: "صافي المستحق", thStatus: "الحالة",
     noCerts: "لا يوجد مستخلصات بعد.", submit: "تقديم", approve: "اعتماد", markPaid: "تسجيل الصرف",
     errAddItem: "تعذر إضافة البند", confirmDeleteItem: "تأكيد حذف البند؟", errCert: "تعذر إنشاء المستخلص", errAction: "تعذر تنفيذ الإجراء",
+    editContract: "تعديل بيانات العقد", contractNumber: "رقم العقد", signedDate: "تاريخ التوقيع",
+    retentionPct: "نسبة ضمان حسن التنفيذ %", advancePct: "نسبة الدفعة المقدمة %", notes: "ملاحظات",
+    saveContract: "حفظ", cancelContract: "إلغاء", errSaveContract: "تعذر حفظ تعديلات العقد",
+    deleteContract: "حذف العقد", confirmDeleteContract: "تأكيد حذف العقد نهائيًا؟ ده هيمسح جدول الكميات معاه، ومش هيتم لو فيه مستخلصات مسجلة. العملية لا يمكن التراجع عنها.",
+    errDeleteContract: "تعذر حذف العقد",
   },
   en: {
     loading: "Loading...", contractTitle: "Contract", project: "Project", value: "Contract Value",
@@ -49,14 +54,23 @@ const dict = {
     thRetention: "Retention", thAdvanceRecovery: "Advance Recovery", thNet: "Net Payable", thStatus: "Status",
     noCerts: "No certificates yet.", submit: "Submit", approve: "Approve", markPaid: "Mark Paid",
     errAddItem: "Failed to add item", confirmDeleteItem: "Confirm item deletion?", errCert: "Failed to create certificate", errAction: "Action failed",
+    editContract: "Edit Contract Details", contractNumber: "Contract Number", signedDate: "Signed Date",
+    retentionPct: "Retention %", advancePct: "Advance Payment %", notes: "Notes",
+    saveContract: "Save", cancelContract: "Cancel", errSaveContract: "Failed to save contract changes",
+    deleteContract: "Delete Contract", confirmDeleteContract: "Confirm permanently deleting this contract? This will also remove its BOQ, and won't proceed if certificates exist. This cannot be undone.",
+    errDeleteContract: "Failed to delete contract",
   },
 };
 
 export default function ContractDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const router = useRouter();
   const locale = useLocale();
   const t = dict[locale];
   const [contract, setContract] = useState<any>(null);
+  const [editingContract, setEditingContract] = useState(false);
+  const [contractForm, setContractForm] = useState({ contractNumber: "", signedDate: "", retentionPct: 0, advancePaymentPct: 0, notes: "" });
+  const [contractError, setContractError] = useState("");
   const [showBoqForm, setShowBoqForm] = useState(false);
   const [showCertForm, setShowCertForm] = useState(false);
   const [error, setError] = useState("");
@@ -70,12 +84,42 @@ export default function ContractDetailPage() {
 
   async function load() {
     const res = await fetch(`/api/contracts/${id}`);
-    if (res.ok) setContract(await res.json());
+    if (res.ok) {
+      const data = await res.json();
+      setContract(data);
+      setContractForm({
+        contractNumber: data.contractNumber,
+        signedDate: new Date(data.signedDate).toISOString().slice(0, 10),
+        retentionPct: Number(data.retentionPct),
+        advancePaymentPct: Number(data.advancePaymentPct),
+        notes: data.notes ?? "",
+      });
+    }
   }
 
   useEffect(() => {
     load();
   }, [id]);
+
+  async function saveContract(e: React.FormEvent) {
+    e.preventDefault();
+    setContractError("");
+    const res = await fetch(`/api/contracts/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(contractForm),
+    });
+    if (!res.ok) return setContractError((await res.json()).error ?? t.errSaveContract);
+    setEditingContract(false);
+    load();
+  }
+
+  async function removeContract() {
+    if (!confirm(t.confirmDeleteContract)) return;
+    const res = await fetch(`/api/contracts/${id}`, { method: "DELETE" });
+    if (!res.ok) return alert((await res.json()).error ?? t.errDeleteContract);
+    router.push(`/projects/${contract.project.id}`);
+  }
 
   async function addBoq(e: React.FormEvent) {
     e.preventDefault();
@@ -165,13 +209,55 @@ export default function ContractDetailPage() {
   const currency = locale === "ar" ? "ج.م" : "EGP";
 
   return (
-    <AppShell title={`${t.contractTitle} ${contract.contractNumber}`}>
+    <AppShell
+      title={`${t.contractTitle} ${contract.contractNumber}`}
+      action={
+        <div className="flex gap-2">
+          <button onClick={() => setEditingContract((v) => !v)} className="border text-sm px-4 py-2 rounded-xl flex items-center gap-1.5">
+            <Pencil size={15} /> {t.editContract}
+          </button>
+          <button onClick={removeContract} className="border border-danger text-danger text-sm px-4 py-2 rounded-xl flex items-center gap-1.5">
+            <Trash2 size={15} /> {t.deleteContract}
+          </button>
+        </div>
+      }
+    >
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="card"><p className="text-sm text-neutral-500">{t.project}</p><p className="font-bold">{contract.project.name}</p></div>
         <div className="card"><p className="text-sm text-neutral-500">{t.value}</p><p className="font-bold">{Number(contract.project.contractValue).toLocaleString(localeCode)} {currency}</p></div>
         <div className="card"><p className="text-sm text-neutral-500">{t.retention}</p><p className="font-bold">{Number(contract.retentionPct)}%</p></div>
         <div className="card"><p className="text-sm text-neutral-500">{t.advance}</p><p className="font-bold">{Number(contract.advancePaymentAmount).toLocaleString(localeCode)} {currency}</p></div>
       </div>
+
+      {editingContract && (
+        <form onSubmit={saveContract} className="card grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div>
+            <label className="text-sm text-neutral-600 block mb-1">{t.contractNumber}</label>
+            <input required value={contractForm.contractNumber} onChange={(e) => setContractForm({ ...contractForm, contractNumber: e.target.value })} className="w-full border rounded-xl px-3 py-2" />
+          </div>
+          <div>
+            <label className="text-sm text-neutral-600 block mb-1">{t.signedDate}</label>
+            <input required type="date" value={contractForm.signedDate} onChange={(e) => setContractForm({ ...contractForm, signedDate: e.target.value })} className="w-full border rounded-xl px-3 py-2" />
+          </div>
+          <div>
+            <label className="text-sm text-neutral-600 block mb-1">{t.retentionPct}</label>
+            <input required type="number" step="0.01" value={contractForm.retentionPct} onChange={(e) => setContractForm({ ...contractForm, retentionPct: Number(e.target.value) })} className="w-full border rounded-xl px-3 py-2" />
+          </div>
+          <div>
+            <label className="text-sm text-neutral-600 block mb-1">{t.advancePct}</label>
+            <input required type="number" step="0.01" value={contractForm.advancePaymentPct} onChange={(e) => setContractForm({ ...contractForm, advancePaymentPct: Number(e.target.value) })} className="w-full border rounded-xl px-3 py-2" />
+          </div>
+          <div className="sm:col-span-2">
+            <label className="text-sm text-neutral-600 block mb-1">{t.notes}</label>
+            <input value={contractForm.notes} onChange={(e) => setContractForm({ ...contractForm, notes: e.target.value })} className="w-full border rounded-xl px-3 py-2" />
+          </div>
+          {contractError && <p className="text-danger text-sm lg:col-span-3">{contractError}</p>}
+          <div className="lg:col-span-3 flex gap-2">
+            <button className="bg-primary text-white rounded-xl px-5 py-2 text-sm font-medium">{t.saveContract}</button>
+            <button type="button" onClick={() => setEditingContract(false)} className="text-sm px-4 py-2 rounded-xl border">{t.cancelContract}</button>
+          </div>
+        </form>
+      )}
 
       {/* BOQ */}
       <div className="flex items-center justify-between">
