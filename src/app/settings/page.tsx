@@ -25,19 +25,11 @@ const dict = {
     backupTitle: "النسخ الاحتياطي والاستعادة",
     backupDesc: "تصدير نسخة كاملة من قاعدة البيانات كملف JSON، أو استعادة نسخة سابقة (سيتم استبدال كل البيانات الحالية).",
     exportBackup: "تصدير نسخة احتياطية", restoreBackup: "استعادة نسخة احتياطية", restoring: "جارٍ الاستعادة...",
-    importTitle: "استيراد عقود رايه فودز (مرة واحدة)",
-    replaceTitle: "استبدال العقود بالنسخة المُحدَّثة (Word)",
-    replaceDesc: "استبدال بيانات العشر عقود (القيمة، التاريخ، جدول الكميات) بالنسخة الجديدة المستخرجة من ملفات Word — بيحدّث المشاريع الموجودة بنفس الكود بدل ما يكرر بيانات جديدة. أي مستخلصات مسجلة قبل كده هتفضل زي ما هي وهيظهر تحذير لو محتاجة مراجعة.",
-    replaceBtn: "استبدال العقود العشرة", replacing: "جارٍ الاستبدال...", confirmReplace: "تأكيد استبدال بيانات العقود العشرة بالنسخة الجديدة؟ العملية هتحدّث المشاريع الموجودة.",
-    importDesc: "استيراد 10 مشاريع وعقود كاملة (بجداول الكميات) لشركة رايه فودز دفعة واحدة. آمن للتشغيل أكتر من مرة — أي مشروع موجود بالفعل هيتجاهل.",
-    importBtn: "استيراد العقود", importing: "جارٍ الاستيراد...",
     loading: "جارٍ التحميل...",
     savedCompany: "تم حفظ بيانات الشركة ✓", savedSettings: "تم حفظ إعدادات النظام ✓",
     errSave: "تعذر الحفظ — يتطلب صلاحية Admin", errBackup: "تعذر إنشاء النسخة الاحتياطية",
     confirmRestore: "تحذير: استعادة نسخة احتياطية هتستبدل كل البيانات الحالية. متأكد؟",
     restoredOk: "تم استعادة النسخة الاحتياطية بنجاح ✓", errRestore: "تعذر الاستيراد: ",
-    confirmImport: "تأكيد استيراد العقود العشرة (رايه فودز) دفعة واحدة؟ العملية آمنة وممكن تتكرر من غير تكرار البيانات.",
-    errImport: "تعذر الاستيراد",
   },
   en: {
     title: "Settings", tabGeneral: "General", tabAppearance: "Appearance", tabPermissions: "Permissions",
@@ -57,19 +49,11 @@ const dict = {
     backupTitle: "Backup & Restore",
     backupDesc: "Export a full database backup as a JSON file, or restore a previous one (this replaces all current data).",
     exportBackup: "Export Backup", restoreBackup: "Restore Backup", restoring: "Restoring...",
-    importTitle: "Import Raya Foodz Contracts (one-time)",
-    replaceTitle: "Replace Contracts with Updated Version (Word)",
-    replaceDesc: "Replace the 10 contracts' data (value, date, BOQ) with the new version extracted from Word files — updates existing projects by matching code instead of duplicating. Any existing certificates stay as-is, with a warning if they need review.",
-    replaceBtn: "Replace All 10 Contracts", replacing: "Replacing...", confirmReplace: "Confirm replacing the 10 contracts' data with the new version? This will update existing projects.",
-    importDesc: "Import 10 complete projects and contracts (with BOQ) for Raya Foodz at once. Safe to run more than once — existing projects are skipped.",
-    importBtn: "Import Contracts", importing: "Importing...",
     loading: "Loading...",
     savedCompany: "Company info saved ✓", savedSettings: "System settings saved ✓",
     errSave: "Failed to save — requires Admin role", errBackup: "Failed to create backup",
     confirmRestore: "Warning: restoring a backup will replace all current data. Continue?",
     restoredOk: "Backup restored successfully ✓", errRestore: "Import failed: ",
-    confirmImport: "Confirm importing the 10 Raya Foodz contracts at once? This is safe and can be re-run without duplicating data.",
-    errImport: "Import failed",
   },
 };
 
@@ -85,10 +69,6 @@ export default function SettingsPage() {
   const [savedMsg, setSavedMsg] = useState("");
   const [error, setError] = useState("");
   const [restoring, setRestoring] = useState(false);
-  const [importing, setImporting] = useState(false);
-  const [importResults, setImportResults] = useState<any>(null);
-  const [replacing, setReplacing] = useState(false);
-  const [replaceResults, setReplaceResults] = useState<any>(null);
   const [theme, setTheme] = useState<"light" | "dark">("light");
 
   useEffect(() => {
@@ -141,36 +121,6 @@ export default function SettingsPage() {
     document.cookie = `theme=${next}; path=/; max-age=31536000`;
     setTheme(next);
     window.location.reload();
-  }
-
-  async function importContracts() {
-    if (!confirm(t.confirmImport)) return;
-    setImporting(true);
-    setImportResults(null);
-    try {
-      const res = await fetch("/api/admin/import-contracts", { method: "POST" });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? t.errImport);
-      setImportResults(data);
-    } catch (err: any) {
-      alert(err.message);
-    }
-    setImporting(false);
-  }
-
-  async function replaceContracts() {
-    if (!confirm(t.confirmReplace)) return;
-    setReplacing(true);
-    setReplaceResults(null);
-    try {
-      const res = await fetch("/api/admin/replace-contracts", { method: "POST" });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? t.errImport);
-      setReplaceResults(data);
-    } catch (err: any) {
-      alert(err.message);
-    }
-    setReplacing(false);
   }
 
   async function exportBackup() {
@@ -408,39 +358,6 @@ export default function SettingsPage() {
             <input type="file" accept="application/json" onChange={importBackup} disabled={restoring} className="hidden" />
           </label>
         </div>
-      </div>
-      <div className="card space-y-3">
-        <h2 className="font-semibold">{t.importTitle}</h2>
-        <p className="text-sm text-neutral-500">{t.importDesc}</p>
-        <button onClick={importContracts} disabled={importing} className="bg-primary text-white rounded-xl px-5 py-2 text-sm font-medium disabled:opacity-60">
-          {importing ? t.importing : t.importBtn}
-        </button>
-        {importResults && (
-          <div className="text-sm space-y-1 border-t pt-3 mt-2">
-            {importResults.results.map((r: any, i: number) => (
-              <p key={i} className="text-neutral-600">
-                <span className="font-medium">{r.project}:</span> {r.status}
-              </p>
-            ))}
-          </div>
-        )}
-      </div>
-
-      <div className="card space-y-3">
-        <h2 className="font-semibold">{t.replaceTitle}</h2>
-        <p className="text-sm text-neutral-500">{t.replaceDesc}</p>
-        <button onClick={replaceContracts} disabled={replacing} className="bg-danger text-white rounded-xl px-5 py-2 text-sm font-medium disabled:opacity-60">
-          {replacing ? t.replacing : t.replaceBtn}
-        </button>
-        {replaceResults && (
-          <div className="text-sm space-y-1 border-t pt-3 mt-2">
-            {replaceResults.results.map((r: any, i: number) => (
-              <p key={i} className="text-neutral-600">
-                <span className="font-medium">{r.project}:</span> {r.status}
-              </p>
-            ))}
-          </div>
-        )}
       </div>
       </>
       )}
