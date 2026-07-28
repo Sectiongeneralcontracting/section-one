@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { AppShell } from "@/components/layout/app-shell";
 import { useLocale } from "@/lib/use-locale";
-import { Plus, X } from "lucide-react";
+import { Plus, X, Pencil, Trash2 } from "lucide-react";
 
 const dict = {
   ar: {
@@ -15,6 +15,8 @@ const dict = {
     save: "حفظ العقد", saving: "جارٍ الحفظ...", err: "تعذر حفظ العقد — تأكد من البيانات",
     thNumber: "رقم العقد", thProject: "المشروع", thDate: "تاريخ التوقيع", thRetention: "ضمان حسن التنفيذ", thCerts: "عدد المستخلصات",
     loading: "جارٍ التحميل...", empty: "لا يوجد عقود بعد.",
+    confirmDelete: "تأكيد حذف العقد نهائيًا؟ ده هيمسح جدول الكميات معاه، ومش هيتم لو فيه مستخلصات مسجلة.",
+    errDelete: "تعذر الحذف",
   },
   en: {
     title: "Contracts", newContract: "New Contract", cancel: "Cancel",
@@ -24,6 +26,8 @@ const dict = {
     save: "Save Contract", saving: "Saving...", err: "Failed to save contract — check the data",
     thNumber: "Contract No.", thProject: "Project", thDate: "Signed Date", thRetention: "Retention", thCerts: "Certificates",
     loading: "Loading...", empty: "No contracts yet.",
+    confirmDelete: "Confirm permanently deleting this contract? This will also remove its BOQ, and won't proceed if certificates exist.",
+    errDelete: "Failed to delete",
   },
 };
 
@@ -73,6 +77,13 @@ export default function ContractsPage() {
     if (!res.ok) return setError(t.err);
     setForm({ projectId: "", contractNumber: "", signedDate: "", durationDays: 0, retentionPct: 5, advancePaymentPct: 0, advancePaymentAmount: 0 });
     setShowForm(false);
+    load();
+  }
+
+  async function removeContract(contractId: string) {
+    if (!confirm(t.confirmDelete)) return;
+    const res = await fetch(`/api/contracts/${contractId}`, { method: "DELETE" });
+    if (!res.ok) return alert((await res.json()).error ?? t.errDelete);
     load();
   }
 
@@ -137,12 +148,13 @@ export default function ContractsPage() {
               <th className="p-3 font-medium">{t.thDate}</th>
               <th className="p-3 font-medium">{t.thRetention}</th>
               <th className="p-3 font-medium">{t.thCerts}</th>
+              <th className="p-3 font-medium"></th>
             </tr>
           </thead>
           <tbody>
-            {loading && <tr><td className="p-4 text-neutral-400" colSpan={5}>{t.loading}</td></tr>}
+            {loading && <tr><td className="p-4 text-neutral-400" colSpan={6}>{t.loading}</td></tr>}
             {!loading && contracts.length === 0 && (
-              <tr><td className="p-4 text-neutral-400" colSpan={5}>{t.empty}</td></tr>
+              <tr><td className="p-4 text-neutral-400" colSpan={6}>{t.empty}</td></tr>
             )}
             {contracts.map((c) => (
               <tr key={c.id} className="border-t hover:bg-neutral-50">
@@ -151,6 +163,12 @@ export default function ContractsPage() {
                 <td className="p-3">{new Date(c.signedDate).toLocaleDateString(locale === "ar" ? "ar-EG" : "en-US")}</td>
                 <td className="p-3">{Number(c.retentionPct)}%</td>
                 <td className="p-3">{c.certificates.length}</td>
+                <td className="p-3 flex gap-2">
+                  <Link href={`/contracts/${c.id}`} className="text-primary hover:opacity-70"><Pencil size={14} /></Link>
+                  {c.certificates.length === 0 && (
+                    <button onClick={() => removeContract(c.id)} className="text-danger hover:opacity-70"><Trash2 size={14} /></button>
+                  )}
+                </td>
               </tr>
             ))}
           </tbody>

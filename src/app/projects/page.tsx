@@ -7,7 +7,7 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { KpiCard } from "@/components/kpi-card";
 import { ExpensesByCategoryChart } from "@/components/dashboard-charts";
 import { useLocale } from "@/lib/use-locale";
-import { Plus, X, Coins, TrendingDown, TrendingUp, Briefcase, TrendingUp as CashUp, TrendingDown as CashDown } from "lucide-react";
+import { Plus, X, Coins, TrendingDown, TrendingUp, Briefcase, TrendingUp as CashUp, TrendingDown as CashDown, Pencil, Trash2 } from "lucide-react";
 
 type Certificate = { status: string; netPayable: string };
 type ClientPayment = { amount: string };
@@ -72,6 +72,7 @@ const dict = {
     noMatch: "لا يوجد مشاريع مطابقة.",
     total: "الإجمالي",
     statuses: { ONGOING: "جارية", READY_TO_CLOSE: "جاهزة للإغلاق", CLOSED: "مغلقة", DELAYED: "متأخرة" },
+    confirmDelete: "تأكيد حذف المشروع نهائيًا؟ العملية لا يمكن التراجع عنها.", errDelete: "تعذر حذف المشروع — راجع صفحة تفاصيل المشروع لمعرفة السبب",
   },
   en: {
     title: "Projects",
@@ -111,6 +112,7 @@ const dict = {
     noMatch: "No matching projects.",
     total: "Total",
     statuses: { ONGOING: "Ongoing", READY_TO_CLOSE: "Ready to Close", CLOSED: "Closed", DELAYED: "Delayed" },
+    confirmDelete: "Confirm permanently deleting this project? This cannot be undone.", errDelete: "Failed to delete project — check the project detail page for the reason",
   },
 };
 
@@ -160,6 +162,13 @@ export default function ProjectsPage() {
     if (!res.ok) return setError(t.err);
     setForm({ code: "", name: "", clientId: "", contractValue: 0, startDate: "", status: "ONGOING" });
     setShowForm(false);
+    load();
+  }
+
+  async function removeProject(projectId: string) {
+    if (!confirm(t.confirmDelete)) return;
+    const res = await fetch(`/api/projects/${projectId}`, { method: "DELETE" });
+    if (!res.ok) return alert((await res.json()).error ?? t.errDelete);
     load();
   }
 
@@ -306,12 +315,13 @@ export default function ProjectsPage() {
               <th className="p-3 font-medium">{t.thClientPaid}</th>
               <th className="p-3 font-medium">{t.thCashFlow}</th>
               <th className="p-3 font-medium">{t.thStatus}</th>
+              <th className="p-3 font-medium"></th>
             </tr>
           </thead>
           <tbody>
-            {loading && <tr><td className="p-4 text-neutral-400" colSpan={10}>{t.loading}</td></tr>}
+            {loading && <tr><td className="p-4 text-neutral-400" colSpan={11}>{t.loading}</td></tr>}
             {!loading && rows.length === 0 && (
-              <tr><td className="p-4 text-neutral-400" colSpan={10}>{t.noMatch}</td></tr>
+              <tr><td className="p-4 text-neutral-400" colSpan={11}>{t.noMatch}</td></tr>
             )}
             {rows.map((p) => (
               <tr key={p.id} className="border-t hover:bg-neutral-50">
@@ -334,6 +344,12 @@ export default function ProjectsPage() {
                   </span>
                 </td>
                 <td className="p-3"><StatusBadge status={p.status} /></td>
+                <td className="p-3 flex gap-2">
+                  <Link href={`/projects/${p.id}`} className="text-primary hover:opacity-70"><Pencil size={14} /></Link>
+                  {p.status !== "CLOSED" && (
+                    <button onClick={() => removeProject(p.id)} className="text-danger hover:opacity-70"><Trash2 size={14} /></button>
+                  )}
+                </td>
               </tr>
             ))}
           </tbody>
@@ -347,7 +363,7 @@ export default function ProjectsPage() {
                 <td className="p-3">{rows.reduce((s, p) => s + p.totalCollected, 0).toLocaleString(locale === "ar" ? "ar-EG" : "en-US")}</td>
                 <td className="p-3">{rows.reduce((s, p) => s + p.totalClientPaid, 0).toLocaleString(locale === "ar" ? "ar-EG" : "en-US")}</td>
                 <td className="p-3">{rows.reduce((s, p) => s + p.cashFlow, 0).toLocaleString(locale === "ar" ? "ar-EG" : "en-US")}</td>
-                <td className="p-3"></td>
+                <td className="p-3" colSpan={2}></td>
               </tr>
             </tfoot>
           )}
