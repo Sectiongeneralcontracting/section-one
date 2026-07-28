@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { AppShell } from "@/components/layout/app-shell";
 import { useLocale } from "@/lib/use-locale";
-import { Plus, X, ArrowDownCircle, ArrowUpCircle } from "lucide-react";
+import { Plus, X, ArrowDownCircle, ArrowUpCircle, Pencil, Trash2 } from "lucide-react";
 
 const dict = {
   ar: {
@@ -13,10 +13,13 @@ const dict = {
     movementType: "نوع الحركة", in: "وارد (توريد)", out: "منصرف (لمشروع)",
     warehouse: "المخزن *", chooseWarehouse: "اختر المخزن", item: "الصنف *", chooseItem: "اختر الصنف",
     quantity: "الكمية *", receivingProject: "المشروع المستلم", none: "بدون تحديد", notes: "ملاحظات",
-    save: "حفظ الحركة", saving: "جارٍ الحفظ...",
+    save: "حفظ الحركة", saving: "جارٍ الحفظ...", cancel: "إلغاء",
     errItem: "تعذر إضافة الصنف", errWarehouse: "تعذر إضافة المخزن", errMovement: "تعذر تسجيل الحركة",
     thItem: "الصنف", thUnit: "الوحدة", thBalance: "الرصيد الحالي", thReorder: "حد إعادة الطلب", thStatus: "الحالة",
     loading: "جارٍ التحميل...", empty: "لا يوجد أصناف بعد.", low: "منخفض", available: "متوفر",
+    warehousesTitle: "المخازن المسجلة", thWarehouseName: "اسم المخزن", thLocation: "الموقع",
+    noWarehouses: "لا يوجد مخازن مسجلة بعد.", confirmDeleteWarehouse: "تأكيد حذف المخزن؟",
+    confirmDeleteItem: "تأكيد حذف الصنف؟", errDelete: "تعذر الحذف",
   },
   en: {
     title: "Inventory", addWarehouse: "+ Warehouse", addItem: "+ Item", newMovement: "Stock Movement",
@@ -25,10 +28,13 @@ const dict = {
     movementType: "Movement Type", in: "In (supply)", out: "Out (to project)",
     warehouse: "Warehouse *", chooseWarehouse: "Choose warehouse", item: "Item *", chooseItem: "Choose item",
     quantity: "Quantity *", receivingProject: "Receiving Project", none: "None", notes: "Notes",
-    save: "Save Movement", saving: "Saving...",
+    save: "Save Movement", saving: "Saving...", cancel: "Cancel",
     errItem: "Failed to add item", errWarehouse: "Failed to add warehouse", errMovement: "Failed to record movement",
     thItem: "Item", thUnit: "Unit", thBalance: "Current Balance", thReorder: "Reorder Level", thStatus: "Status",
     loading: "Loading...", empty: "No items yet.", low: "Low", available: "Available",
+    warehousesTitle: "Registered Warehouses", thWarehouseName: "Warehouse Name", thLocation: "Location",
+    noWarehouses: "No warehouses registered yet.", confirmDeleteWarehouse: "Confirm deleting this warehouse?",
+    confirmDeleteItem: "Confirm deleting this item?", errDelete: "Failed to delete",
   },
 };
 
@@ -49,6 +55,11 @@ export default function InventoryPage() {
   const [itemForm, setItemForm] = useState({ name: "", unit: "", reorderLevel: 0 });
   const [whForm, setWhForm] = useState({ name: "", location: "" });
   const [moveForm, setMoveForm] = useState({ warehouseId: "", itemId: "", type: "IN", quantity: 0, projectId: "", notes: "" });
+
+  const [editingItemId, setEditingItemId] = useState<string | null>(null);
+  const [editItemForm, setEditItemForm] = useState({ name: "", unit: "", reorderLevel: 0 });
+  const [editingWhId, setEditingWhId] = useState<string | null>(null);
+  const [editWhForm, setEditWhForm] = useState({ name: "", location: "" });
 
   async function load() {
     setLoading(true);
@@ -83,6 +94,29 @@ export default function InventoryPage() {
     load();
   }
 
+  function startEditItem(i: any) {
+    setEditingItemId(i.id);
+    setEditItemForm({ name: i.name, unit: i.unit, reorderLevel: Number(i.reorderLevel) });
+  }
+
+  async function saveEditedItem(itemId: string) {
+    const res = await fetch(`/api/inventory-items/${itemId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(editItemForm),
+    });
+    if (!res.ok) return alert((await res.json()).error ?? t.errDelete);
+    setEditingItemId(null);
+    load();
+  }
+
+  async function deleteItem(itemId: string) {
+    if (!confirm(t.confirmDeleteItem)) return;
+    const res = await fetch(`/api/inventory-items/${itemId}`, { method: "DELETE" });
+    if (!res.ok) return alert((await res.json()).error ?? t.errDelete);
+    load();
+  }
+
   async function addWarehouse(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
@@ -96,6 +130,29 @@ export default function InventoryPage() {
     if (!res.ok) return setError(t.errWarehouse);
     setWhForm({ name: "", location: "" });
     setShowWhForm(false);
+    load();
+  }
+
+  function startEditWh(w: any) {
+    setEditingWhId(w.id);
+    setEditWhForm({ name: w.name, location: w.location ?? "" });
+  }
+
+  async function saveEditedWh(whId: string) {
+    const res = await fetch(`/api/warehouses/${whId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(editWhForm),
+    });
+    if (!res.ok) return alert((await res.json()).error ?? t.errDelete);
+    setEditingWhId(null);
+    load();
+  }
+
+  async function deleteWarehouse(whId: string) {
+    if (!confirm(t.confirmDeleteWarehouse)) return;
+    const res = await fetch(`/api/warehouses/${whId}`, { method: "DELETE" });
+    if (!res.ok) return alert((await res.json()).error ?? t.errDelete);
     load();
   }
 
@@ -197,6 +254,43 @@ export default function InventoryPage() {
       )}
 
       <div className="card !p-0 overflow-hidden">
+        <div className="p-3 border-b font-semibold text-sm">{t.warehousesTitle}</div>
+        <table className="w-full text-sm">
+          <thead className="bg-neutral-50 text-neutral-500">
+            <tr className="text-right">
+              <th className="p-3 font-medium">{t.thWarehouseName}</th>
+              <th className="p-3 font-medium">{t.thLocation}</th>
+              <th className="p-3 font-medium"></th>
+            </tr>
+          </thead>
+          <tbody>
+            {warehouses.length === 0 && <tr><td className="p-4 text-neutral-400" colSpan={3}>{t.noWarehouses}</td></tr>}
+            {warehouses.map((w) =>
+              editingWhId === w.id ? (
+                <tr key={w.id} className="border-t bg-neutral-50">
+                  <td className="p-2"><input value={editWhForm.name} onChange={(e) => setEditWhForm({ ...editWhForm, name: e.target.value })} className="w-full border rounded-lg px-2 py-1" /></td>
+                  <td className="p-2"><input value={editWhForm.location} onChange={(e) => setEditWhForm({ ...editWhForm, location: e.target.value })} className="w-full border rounded-lg px-2 py-1" /></td>
+                  <td className="p-2 flex gap-2">
+                    <button onClick={() => saveEditedWh(w.id)} className="text-success text-xs font-medium">{t.saveWarehouse}</button>
+                    <button onClick={() => setEditingWhId(null)} className="text-neutral-500 text-xs">{t.cancel}</button>
+                  </td>
+                </tr>
+              ) : (
+                <tr key={w.id} className="border-t">
+                  <td className="p-3 font-medium">{w.name}</td>
+                  <td className="p-3">{w.location || "—"}</td>
+                  <td className="p-3 flex gap-2">
+                    <button onClick={() => startEditWh(w)} className="text-primary hover:opacity-70"><Pencil size={14} /></button>
+                    <button onClick={() => deleteWarehouse(w.id)} className="text-danger hover:opacity-70"><Trash2 size={14} /></button>
+                  </td>
+                </tr>
+              )
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="card !p-0 overflow-hidden">
         <table className="w-full text-sm">
           <thead className="bg-neutral-50 text-neutral-500">
             <tr className="text-right">
@@ -205,14 +299,27 @@ export default function InventoryPage() {
               <th className="p-3 font-medium">{t.thBalance}</th>
               <th className="p-3 font-medium">{t.thReorder}</th>
               <th className="p-3 font-medium">{t.thStatus}</th>
+              <th className="p-3 font-medium"></th>
             </tr>
           </thead>
           <tbody>
-            {loading && <tr><td className="p-4 text-neutral-400" colSpan={5}>{t.loading}</td></tr>}
-            {!loading && items.length === 0 && <tr><td className="p-4 text-neutral-400" colSpan={5}>{t.empty}</td></tr>}
+            {loading && <tr><td className="p-4 text-neutral-400" colSpan={6}>{t.loading}</td></tr>}
+            {!loading && items.length === 0 && <tr><td className="p-4 text-neutral-400" colSpan={6}>{t.empty}</td></tr>}
             {items.map((i) => {
               const low = i.totalBalance <= Number(i.reorderLevel);
-              return (
+              return editingItemId === i.id ? (
+                <tr key={i.id} className="border-t bg-neutral-50">
+                  <td className="p-2"><input value={editItemForm.name} onChange={(e) => setEditItemForm({ ...editItemForm, name: e.target.value })} className="w-full border rounded-lg px-2 py-1" /></td>
+                  <td className="p-2"><input value={editItemForm.unit} onChange={(e) => setEditItemForm({ ...editItemForm, unit: e.target.value })} className="w-full border rounded-lg px-2 py-1" /></td>
+                  <td className="p-2 text-neutral-400">{i.totalBalance.toLocaleString(localeCode)}</td>
+                  <td className="p-2"><input type="number" step="0.001" value={editItemForm.reorderLevel} onChange={(e) => setEditItemForm({ ...editItemForm, reorderLevel: Number(e.target.value) })} className="w-full border rounded-lg px-2 py-1" /></td>
+                  <td className="p-2"></td>
+                  <td className="p-2 flex gap-2">
+                    <button onClick={() => saveEditedItem(i.id)} className="text-success text-xs font-medium">{t.saveItem}</button>
+                    <button onClick={() => setEditingItemId(null)} className="text-neutral-500 text-xs">{t.cancel}</button>
+                  </td>
+                </tr>
+              ) : (
                 <tr key={i.id} className="border-t">
                   <td className="p-3 font-medium">{i.name}</td>
                   <td className="p-3">{i.unit}</td>
@@ -228,6 +335,10 @@ export default function InventoryPage() {
                         <ArrowUpCircle size={12} /> {t.available}
                       </span>
                     )}
+                  </td>
+                  <td className="p-3 flex gap-2">
+                    <button onClick={() => startEditItem(i)} className="text-primary hover:opacity-70"><Pencil size={14} /></button>
+                    <button onClick={() => deleteItem(i.id)} className="text-danger hover:opacity-70"><Trash2 size={14} /></button>
                   </td>
                 </tr>
               );

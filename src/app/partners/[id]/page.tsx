@@ -5,7 +5,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { AppShell } from "@/components/layout/app-shell";
 import { useLocale } from "@/lib/use-locale";
-import { Plus, X, Wallet } from "lucide-react";
+import { Plus, X, Wallet, Pencil, Trash2 } from "lucide-react";
 
 const dict = {
   ar: {
@@ -20,6 +20,7 @@ const dict = {
     noData: "لا يوجد بيانات.", loading: "جارٍ التحميل...",
     backToPartners: "رجوع للشركاء",
     pendingNote: "الأرباح دي محسوبة مبدئيًا بس هتتوزع فعليًا لرصيد الشريك بس لما المشروع يتقفل.",
+    saveRecord: "حفظ", cancelRecord: "إلغاء", confirmDeleteRecord: "تأكيد الحذف؟ العملية لا يمكن التراجع عنها.", errDelete: "تعذر الحذف",
   },
   en: {
     capital: "Total Capital (Funding)", withdrawals: "Total Withdrawals",
@@ -33,6 +34,7 @@ const dict = {
     noData: "No data.", loading: "Loading...",
     backToPartners: "Back to Partners",
     pendingNote: "These profits are preliminary calculations only — they're credited to the partner's balance only once the project is closed.",
+    saveRecord: "Save", cancelRecord: "Cancel", confirmDeleteRecord: "Confirm deleting this? This cannot be undone.", errDelete: "Failed to delete",
   },
 };
 
@@ -48,6 +50,9 @@ export default function PartnerDetailPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [form, setForm] = useState({ amount: 0, date: "", notes: "" });
+  const [editingFundingId, setEditingFundingId] = useState<string | null>(null);
+  const [editingWithdrawalId, setEditingWithdrawalId] = useState<string | null>(null);
+  const [editRecordForm, setEditRecordForm] = useState({ amount: 0, date: "", notes: "" });
 
   async function load() {
     const res = await fetch(`/api/partners/${id}/balance`);
@@ -57,6 +62,29 @@ export default function PartnerDetailPage() {
   useEffect(() => {
     load();
   }, [id]);
+
+  function startEditRecord(r: any, setEditingId: (id: string | null) => void) {
+    setEditingId(r.id);
+    setEditRecordForm({ amount: Number(r.amount), date: new Date(r.date).toISOString().slice(0, 10), notes: r.notes ?? "" });
+  }
+
+  async function saveEditedRecord(endpoint: "partner-contributions" | "partner-withdrawals", recordId: string, setEditingId: (id: string | null) => void) {
+    const res = await fetch(`/api/${endpoint}/${recordId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(editRecordForm),
+    });
+    if (!res.ok) return alert((await res.json()).error ?? t.errDelete);
+    setEditingId(null);
+    load();
+  }
+
+  async function deleteRecord(endpoint: "partner-contributions" | "partner-withdrawals", recordId: string) {
+    if (!confirm(t.confirmDeleteRecord)) return;
+    const res = await fetch(`/api/${endpoint}/${recordId}`, { method: "DELETE" });
+    if (!res.ok) return alert((await res.json()).error ?? t.errDelete);
+    load();
+  }
 
   async function submitWithdrawal(e: React.FormEvent) {
     e.preventDefault();
@@ -123,17 +151,33 @@ export default function PartnerDetailPage() {
           <div className="p-3 border-b font-semibold text-sm">{t.fundingHistory}</div>
           <table className="w-full text-sm">
             <thead className="bg-neutral-50 text-neutral-500">
-              <tr className="text-right"><th className="p-2 font-medium">{t.thDate}</th><th className="p-2 font-medium">{t.thAmount}</th><th className="p-2 font-medium">{t.thNotes}</th></tr>
+              <tr className="text-right"><th className="p-2 font-medium">{t.thDate}</th><th className="p-2 font-medium">{t.thAmount}</th><th className="p-2 font-medium">{t.thNotes}</th><th className="p-2 font-medium"></th></tr>
             </thead>
             <tbody>
-              {data.fundingHistory.length === 0 && <tr><td className="p-3 text-neutral-400" colSpan={3}>{t.noData}</td></tr>}
-              {data.fundingHistory.map((f: any) => (
-                <tr key={f.id} className="border-t">
-                  <td className="p-2">{new Date(f.date).toLocaleDateString(localeCode)}</td>
-                  <td className="p-2 font-medium">{Number(f.amount).toLocaleString(localeCode)}</td>
-                  <td className="p-2">{f.notes || "—"}</td>
-                </tr>
-              ))}
+              {data.fundingHistory.length === 0 && <tr><td className="p-3 text-neutral-400" colSpan={4}>{t.noData}</td></tr>}
+              {data.fundingHistory.map((f: any) =>
+                editingFundingId === f.id ? (
+                  <tr key={f.id} className="border-t bg-neutral-50">
+                    <td className="p-2"><input type="date" value={editRecordForm.date} onChange={(e) => setEditRecordForm({ ...editRecordForm, date: e.target.value })} className="w-full border rounded-lg px-2 py-1" /></td>
+                    <td className="p-2"><input type="number" step="0.01" value={editRecordForm.amount} onChange={(e) => setEditRecordForm({ ...editRecordForm, amount: Number(e.target.value) })} className="w-full border rounded-lg px-2 py-1" /></td>
+                    <td className="p-2"><input value={editRecordForm.notes} onChange={(e) => setEditRecordForm({ ...editRecordForm, notes: e.target.value })} className="w-full border rounded-lg px-2 py-1" /></td>
+                    <td className="p-2 flex gap-1">
+                      <button onClick={() => saveEditedRecord("partner-contributions", f.id, setEditingFundingId)} className="text-success text-xs">{t.saveRecord}</button>
+                      <button onClick={() => setEditingFundingId(null)} className="text-neutral-500 text-xs">{t.cancelRecord}</button>
+                    </td>
+                  </tr>
+                ) : (
+                  <tr key={f.id} className="border-t">
+                    <td className="p-2">{new Date(f.date).toLocaleDateString(localeCode)}</td>
+                    <td className="p-2 font-medium">{Number(f.amount).toLocaleString(localeCode)}</td>
+                    <td className="p-2">{f.notes || "—"}</td>
+                    <td className="p-2 flex gap-2">
+                      <button onClick={() => startEditRecord(f, setEditingFundingId)} className="text-primary hover:opacity-70"><Pencil size={13} /></button>
+                      <button onClick={() => deleteRecord("partner-contributions", f.id)} className="text-danger hover:opacity-70"><Trash2 size={13} /></button>
+                    </td>
+                  </tr>
+                )
+              )}
             </tbody>
           </table>
         </div>
@@ -142,17 +186,33 @@ export default function PartnerDetailPage() {
           <div className="p-3 border-b font-semibold text-sm">{t.withdrawalHistory}</div>
           <table className="w-full text-sm">
             <thead className="bg-neutral-50 text-neutral-500">
-              <tr className="text-right"><th className="p-2 font-medium">{t.thDate}</th><th className="p-2 font-medium">{t.thAmount}</th><th className="p-2 font-medium">{t.thNotes}</th></tr>
+              <tr className="text-right"><th className="p-2 font-medium">{t.thDate}</th><th className="p-2 font-medium">{t.thAmount}</th><th className="p-2 font-medium">{t.thNotes}</th><th className="p-2 font-medium"></th></tr>
             </thead>
             <tbody>
-              {data.withdrawalHistory.length === 0 && <tr><td className="p-3 text-neutral-400" colSpan={3}>{t.noData}</td></tr>}
-              {data.withdrawalHistory.map((w: any) => (
-                <tr key={w.id} className="border-t">
-                  <td className="p-2">{new Date(w.date).toLocaleDateString(localeCode)}</td>
-                  <td className="p-2 font-medium text-danger">{Number(w.amount).toLocaleString(localeCode)}</td>
-                  <td className="p-2">{w.notes || "—"}</td>
-                </tr>
-              ))}
+              {data.withdrawalHistory.length === 0 && <tr><td className="p-3 text-neutral-400" colSpan={4}>{t.noData}</td></tr>}
+              {data.withdrawalHistory.map((w: any) =>
+                editingWithdrawalId === w.id ? (
+                  <tr key={w.id} className="border-t bg-neutral-50">
+                    <td className="p-2"><input type="date" value={editRecordForm.date} onChange={(e) => setEditRecordForm({ ...editRecordForm, date: e.target.value })} className="w-full border rounded-lg px-2 py-1" /></td>
+                    <td className="p-2"><input type="number" step="0.01" value={editRecordForm.amount} onChange={(e) => setEditRecordForm({ ...editRecordForm, amount: Number(e.target.value) })} className="w-full border rounded-lg px-2 py-1" /></td>
+                    <td className="p-2"><input value={editRecordForm.notes} onChange={(e) => setEditRecordForm({ ...editRecordForm, notes: e.target.value })} className="w-full border rounded-lg px-2 py-1" /></td>
+                    <td className="p-2 flex gap-1">
+                      <button onClick={() => saveEditedRecord("partner-withdrawals", w.id, setEditingWithdrawalId)} className="text-success text-xs">{t.saveRecord}</button>
+                      <button onClick={() => setEditingWithdrawalId(null)} className="text-neutral-500 text-xs">{t.cancelRecord}</button>
+                    </td>
+                  </tr>
+                ) : (
+                  <tr key={w.id} className="border-t">
+                    <td className="p-2">{new Date(w.date).toLocaleDateString(localeCode)}</td>
+                    <td className="p-2 font-medium text-danger">{Number(w.amount).toLocaleString(localeCode)}</td>
+                    <td className="p-2">{w.notes || "—"}</td>
+                    <td className="p-2 flex gap-2">
+                      <button onClick={() => startEditRecord(w, setEditingWithdrawalId)} className="text-primary hover:opacity-70"><Pencil size={13} /></button>
+                      <button onClick={() => deleteRecord("partner-withdrawals", w.id)} className="text-danger hover:opacity-70"><Trash2 size={13} /></button>
+                    </td>
+                  </tr>
+                )
+              )}
             </tbody>
           </table>
         </div>

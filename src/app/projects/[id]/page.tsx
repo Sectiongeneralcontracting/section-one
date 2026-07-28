@@ -26,6 +26,7 @@ const dict = {
     projectCode: "كود المشروع", expenses: "المصروفات", newExpense: "مصروف جديد",
     category: "البند", amount: "القيمة *", desc: "وصف", saveExpense: "حفظ المصروف", errExpense: "تعذر إضافة المصروف",
     thDate: "التاريخ", thCategory: "البند", thDesc: "الوصف", thAmount: "القيمة", noExpenses: "لا يوجد مصروفات مسجلة بعد.",
+    confirmDeleteExpense: "تأكيد حذف المصروف؟ العملية لا يمكن التراجع عنها.",
     partnersTitle: "مساهمة الشركاء في هذا المشروع",
     partnersDesc: "اختار الشركاء المشاركين في المشروع ده وحط قيمة مساهمة كل واحد فيهم — النسبة % بتتحسب تلقائيًا من نسبة كل شريك لإجمالي المساهمات",
     contributionPh: "قيمة المساهمة", noPartners: "لا يوجد شركاء مسجلين في النظام بعد.",
@@ -73,6 +74,7 @@ const dict = {
     projectCode: "Project Code", expenses: "Expenses", newExpense: "New Expense",
     category: "Category", amount: "Amount *", desc: "Description", saveExpense: "Save Expense", errExpense: "Failed to add expense",
     thDate: "Date", thCategory: "Category", thDesc: "Description", thAmount: "Amount", noExpenses: "No expenses recorded yet.",
+    confirmDeleteExpense: "Confirm deleting this expense? This cannot be undone.",
     partnersTitle: "Partner Contributions in this Project",
     partnersDesc: "Select the partners involved in this project and set each one's contribution — their profit % is calculated automatically from their share of total contributions.",
     contributionPh: "Contribution Amount", noPartners: "No partners registered in the system yet.",
@@ -120,6 +122,8 @@ export default function ProjectDetailPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [form, setForm] = useState({ category: "MATERIALS", amount: 0, description: "" });
+  const [editingExpenseId, setEditingExpenseId] = useState<string | null>(null);
+  const [editExpenseForm, setEditExpenseForm] = useState({ category: "MATERIALS", amount: 0, description: "", date: "" });
 
   const [allPartners, setAllPartners] = useState<any[]>([]);
   const [allocations, setAllocations] = useState<{ partnerId: string; contributionAmount: number }[]>([]);
@@ -276,6 +280,29 @@ export default function ProjectDetailPage() {
     if (!res.ok) return setError(t.errExpense);
     setForm({ category: "MATERIALS", amount: 0, description: "" });
     setShowForm(false);
+    load();
+  }
+
+  function startEditExpense(e: any) {
+    setEditingExpenseId(e.id);
+    setEditExpenseForm({ category: e.category, amount: Number(e.amount), description: e.description ?? "", date: new Date(e.date).toISOString().slice(0, 10) });
+  }
+
+  async function saveEditedExpense(expenseId: string) {
+    const res = await fetch(`/api/expenses/${expenseId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(editExpenseForm),
+    });
+    if (!res.ok) return alert((await res.json()).error ?? t.errExpense);
+    setEditingExpenseId(null);
+    load();
+  }
+
+  async function deleteExpense(expenseId: string) {
+    if (!confirm(t.confirmDeleteExpense)) return;
+    const res = await fetch(`/api/expenses/${expenseId}`, { method: "DELETE" });
+    if (!res.ok) return alert((await res.json()).error ?? t.errExpense);
     load();
   }
 
@@ -782,20 +809,42 @@ export default function ProjectDetailPage() {
               <th className="p-3 font-medium">{t.thCategory}</th>
               <th className="p-3 font-medium">{t.thDesc}</th>
               <th className="p-3 font-medium">{t.thAmount}</th>
+              <th className="p-3 font-medium"></th>
             </tr>
           </thead>
           <tbody>
             {project.expenses.length === 0 && (
-              <tr><td className="p-4 text-neutral-400" colSpan={4}>{t.noExpenses}</td></tr>
+              <tr><td className="p-4 text-neutral-400" colSpan={5}>{t.noExpenses}</td></tr>
             )}
-            {project.expenses.map((e: any) => (
-              <tr key={e.id} className="border-t">
-                <td className="p-3">{new Date(e.date).toLocaleDateString(localeCode)}</td>
-                <td className="p-3">{categoryLabels[e.category]?.[locale]}</td>
-                <td className="p-3">{e.description || "—"}</td>
-                <td className="p-3">{Number(e.amount).toLocaleString(localeCode)} {currency}</td>
-              </tr>
-            ))}
+            {project.expenses.map((e: any) =>
+              editingExpenseId === e.id ? (
+                <tr key={e.id} className="border-t bg-neutral-50">
+                  <td className="p-2"><input type="date" value={editExpenseForm.date} onChange={(ev) => setEditExpenseForm({ ...editExpenseForm, date: ev.target.value })} className="w-full border rounded-lg px-2 py-1" /></td>
+                  <td className="p-2">
+                    <select value={editExpenseForm.category} onChange={(ev) => setEditExpenseForm({ ...editExpenseForm, category: ev.target.value })} className="w-full border rounded-lg px-2 py-1">
+                      {Object.entries(categoryLabels).map(([k, v]) => <option key={k} value={k}>{v[locale]}</option>)}
+                    </select>
+                  </td>
+                  <td className="p-2"><input value={editExpenseForm.description} onChange={(ev) => setEditExpenseForm({ ...editExpenseForm, description: ev.target.value })} className="w-full border rounded-lg px-2 py-1" /></td>
+                  <td className="p-2"><input type="number" step="0.01" value={editExpenseForm.amount} onChange={(ev) => setEditExpenseForm({ ...editExpenseForm, amount: Number(ev.target.value) })} className="w-full border rounded-lg px-2 py-1" /></td>
+                  <td className="p-2 flex gap-2">
+                    <button onClick={() => saveEditedExpense(e.id)} className="text-success text-xs font-medium">{t.savePaymentEdit}</button>
+                    <button onClick={() => setEditingExpenseId(null)} className="text-neutral-500 text-xs">{t.cancelPaymentEdit}</button>
+                  </td>
+                </tr>
+              ) : (
+                <tr key={e.id} className="border-t">
+                  <td className="p-3">{new Date(e.date).toLocaleDateString(localeCode)}</td>
+                  <td className="p-3">{categoryLabels[e.category]?.[locale]}</td>
+                  <td className="p-3">{e.description || "—"}</td>
+                  <td className="p-3">{Number(e.amount).toLocaleString(localeCode)} {currency}</td>
+                  <td className="p-3 flex gap-2">
+                    <button onClick={() => startEditExpense(e)} className="text-primary hover:opacity-70"><Pencil size={14} /></button>
+                    <button onClick={() => deleteExpense(e.id)} className="text-danger hover:opacity-70"><Trash2 size={14} /></button>
+                  </td>
+                </tr>
+              )
+            )}
           </tbody>
         </table>
       </div>
