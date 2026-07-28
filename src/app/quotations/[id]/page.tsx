@@ -330,7 +330,7 @@ export default function QuotationDetailPage() {
           </div>
           <div className="text-center">
             {company?.logoUrl ? (
-              <img src={company.logoUrl} alt="" className="h-24 w-24 object-contain" />
+              <img src={company.logoUrl} alt="" className="h-48 w-48 object-contain" />
             ) : (
               <p className="text-lg font-bold" style={{ color: "#C9692E" }}>{company?.name ?? "Section General Contracting"}</p>
             )}

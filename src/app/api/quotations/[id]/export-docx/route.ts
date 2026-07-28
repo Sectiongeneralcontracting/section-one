@@ -54,13 +54,13 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
       headerChildren.push(
         new Paragraph({
           alignment: AlignmentType.LEFT,
-          children: [new ImageRun({ data: img.buffer, type: img.type, transformation: { width: 110, height: 110 } })],
+          children: [new ImageRun({ data: img.buffer, type: img.type, transformation: { width: 220, height: 220 } })],
         })
       );
     }
   }
 
-  const headerTableWidths = [3400, 6140]; // اللوجو | رقم العرض والتاريخ
+  const headerTableWidths = [4200, 5340]; // اللوجو | رقم العرض والتاريخ
   const headerTable = new Table({
     columnWidths: headerTableWidths,
     width: { size: 9540, type: WidthType.DXA },
