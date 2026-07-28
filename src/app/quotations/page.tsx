@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { AppShell } from "@/components/layout/app-shell";
 import { useLocale } from "@/lib/use-locale";
-import { Plus, X } from "lucide-react";
+import { Plus, X, Pencil, Trash2 } from "lucide-react";
 
 const statusLabels: Record<string, { ar: string; en: string }> = {
   DRAFT: { ar: "مسودة", en: "Draft" },
@@ -29,6 +29,7 @@ const dict = {
     save: "حفظ عرض السعر", saving: "جارٍ الحفظ...", err: "تعذر حفظ عرض السعر",
     thNumber: "الرقم", thClient: "العميل", thProject: "المشروع المقترح", thValue: "القيمة", thStatus: "الحالة", thConverted: "المشروع الناتج",
     loading: "جارٍ التحميل...", empty: "لا يوجد عروض أسعار مسجلة بعد.",
+    confirmDelete: "تأكيد حذف عرض السعر؟", errDelete: "تعذر الحذف",
   },
   en: {
     title: "Quotations", newQuotation: "New Quotation", cancel: "Cancel",
@@ -37,6 +38,7 @@ const dict = {
     save: "Save Quotation", saving: "Saving...", err: "Failed to save quotation",
     thNumber: "Number", thClient: "Client", thProject: "Proposed Project", thValue: "Value", thStatus: "Status", thConverted: "Resulting Project",
     loading: "Loading...", empty: "No quotations recorded yet.",
+    confirmDelete: "Confirm deleting this quotation?", errDelete: "Failed to delete",
   },
 };
 
@@ -62,6 +64,13 @@ export default function QuotationsPage() {
   }
 
   useEffect(() => { load(); }, []);
+
+  async function removeQuotation(quotationId: string) {
+    if (!confirm(t.confirmDelete)) return;
+    const res = await fetch(`/api/quotations/${quotationId}`, { method: "DELETE" });
+    if (!res.ok) return alert((await res.json()).error ?? t.errDelete);
+    load();
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -134,11 +143,12 @@ export default function QuotationsPage() {
               <th className="p-3 font-medium">{t.thValue}</th>
               <th className="p-3 font-medium">{t.thStatus}</th>
               <th className="p-3 font-medium">{t.thConverted}</th>
+              <th className="p-3 font-medium"></th>
             </tr>
           </thead>
           <tbody>
-            {loading && <tr><td className="p-4 text-neutral-400" colSpan={6}>{t.loading}</td></tr>}
-            {!loading && quotations.length === 0 && <tr><td className="p-4 text-neutral-400" colSpan={6}>{t.empty}</td></tr>}
+            {loading && <tr><td className="p-4 text-neutral-400" colSpan={7}>{t.loading}</td></tr>}
+            {!loading && quotations.length === 0 && <tr><td className="p-4 text-neutral-400" colSpan={7}>{t.empty}</td></tr>}
             {quotations.map((q) => {
               const total = q.items.reduce((s: number, i: any) => s + Number(i.quantity) * Number(i.unitPrice), 0);
               return (
@@ -149,6 +159,12 @@ export default function QuotationsPage() {
                   <td className="p-3">{total.toLocaleString(localeCode)} {currency}</td>
                   <td className="p-3"><span className={`text-xs px-2.5 py-1 rounded-full font-medium ${statusStyles[q.status]}`}>{statusLabels[q.status][locale]}</span></td>
                   <td className="p-3">{q.convertedProject ? <Link href={`/projects/${q.convertedProject.id}`} className="text-primary hover:underline text-xs">{q.convertedProject.name}</Link> : "—"}</td>
+                  <td className="p-3 flex gap-2">
+                    <Link href={`/quotations/${q.id}`} className="text-primary hover:opacity-70"><Pencil size={14} /></Link>
+                    {q.status !== "CONVERTED" && (
+                      <button onClick={() => removeQuotation(q.id)} className="text-danger hover:opacity-70"><Trash2 size={14} /></button>
+                    )}
+                  </td>
                 </tr>
               );
             })}

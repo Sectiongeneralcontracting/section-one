@@ -22,6 +22,7 @@ const dict = {
     category: "البند", amount: "القيمة *", date: "التاريخ", description: "وصف إضافي",
     save: "حفظ وتوزيع تلقائي", saving: "جارٍ الحفظ والتوزيع...", err: "تعذر تسجيل المصروف",
     thCategory: "البند", thAmount: "القيمة", thDate: "التاريخ", thDistribution: "توزيعه على المشاريع",
+    targetProject: "التخصيص", allOpenProjects: "كل المشاريع المفتوحة (توزيع تلقائي حسب النسبة)", specificProjectNote: "المصروف هيتحمّل بالكامل على المشروع المحدد",
     loading: "جارٍ التحميل...", empty: "لا يوجد مصروفات مكتب رئيسي مسجلة بعد.",
     note: "أي مصروف بتسجله هنا بيتوزع تلقائيًا كمصروف على كل المشاريع المفتوحة (الجارية) حسب نسبة قيمة كل مشروع من إجمالي قيمة المشاريع المفتوحة وقت التسجيل.",
     saveEdit: "حفظ", cancelEdit: "إلغاء", confirmDelete: "تأكيد حذف المصروف؟ ده هيمسح توزيعه من على كل المشاريع كمان. العملية لا يمكن التراجع عنها.",
@@ -32,6 +33,7 @@ const dict = {
     category: "Category", amount: "Amount *", date: "Date", description: "Additional Description",
     save: "Save & Auto-Distribute", saving: "Saving & distributing...", err: "Failed to record expense",
     thCategory: "Category", thAmount: "Amount", thDate: "Date", thDistribution: "Distributed To",
+    targetProject: "Allocation", allOpenProjects: "All Open Projects (auto-distributed by share)", specificProjectNote: "The expense will be fully charged to the selected project",
     loading: "Loading...", empty: "No head office expenses recorded yet.",
     note: "Any expense recorded here is automatically distributed as an expense across all open (ongoing) projects, proportional to each project's contract value at the time of recording.",
     saveEdit: "Save", cancelEdit: "Cancel", confirmDelete: "Confirm deleting this expense? This will also remove its distribution across all projects. This cannot be undone.",
@@ -45,18 +47,20 @@ export default function HeadOfficeExpensesPage() {
   const localeCode = locale === "ar" ? "ar-EG" : "en-US";
   const currency = locale === "ar" ? "ج.م" : "EGP";
   const [expenses, setExpenses] = useState<any[]>([]);
+  const [projects, setProjects] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-  const [form, setForm] = useState({ category: "OFFICE_RENT", amount: 0, date: "", description: "" });
+  const [form, setForm] = useState({ category: "OFFICE_RENT", amount: 0, date: "", description: "", targetProjectId: "" });
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editForm, setEditForm] = useState({ category: "OFFICE_RENT", amount: 0, date: "", description: "" });
+  const [editForm, setEditForm] = useState({ category: "OFFICE_RENT", amount: 0, date: "", description: "", targetProjectId: "" });
 
   async function load() {
     setLoading(true);
-    const res = await fetch("/api/head-office-expenses");
-    if (res.ok) setExpenses(await res.json());
+    const [eRes, pRes] = await Promise.all([fetch("/api/head-office-expenses"), fetch("/api/projects")]);
+    if (eRes.ok) setExpenses(await eRes.json());
+    if (pRes.ok) setProjects(await pRes.json());
     setLoading(false);
   }
 
@@ -73,14 +77,14 @@ export default function HeadOfficeExpensesPage() {
     });
     setSaving(false);
     if (!res.ok) return setError((await res.json()).error ?? t.err);
-    setForm({ category: "OFFICE_RENT", amount: 0, date: "", description: "" });
+    setForm({ category: "OFFICE_RENT", amount: 0, date: "", description: "", targetProjectId: "" });
     setShowForm(false);
     load();
   }
 
   function startEdit(exp: any) {
     setEditingId(exp.id);
-    setEditForm({ category: exp.category, amount: Number(exp.amount), date: new Date(exp.date).toISOString().slice(0, 10), description: exp.description ?? "" });
+    setEditForm({ category: exp.category, amount: Number(exp.amount), date: new Date(exp.date).toISOString().slice(0, 10), description: exp.description ?? "", targetProjectId: exp.targetProjectId ?? "" });
   }
 
   async function saveEdited(expId: string) {
@@ -133,6 +137,14 @@ export default function HeadOfficeExpensesPage() {
             <label className="text-sm text-neutral-600 block mb-1">{t.description}</label>
             <input value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="w-full border rounded-xl px-3 py-2" />
           </div>
+          <div className="lg:col-span-2">
+            <label className="text-sm text-neutral-600 block mb-1">{t.targetProject}</label>
+            <select value={form.targetProjectId} onChange={(e) => setForm({ ...form, targetProjectId: e.target.value })} className="w-full border rounded-xl px-3 py-2">
+              <option value="">{t.allOpenProjects}</option>
+              {projects.filter((p: any) => p.status !== "CLOSED").map((p: any) => <option key={p.id} value={p.id}>{p.name}</option>)}
+            </select>
+            {form.targetProjectId && <p className="text-xs text-warning mt-1">{t.specificProjectNote}</p>}
+          </div>
           {error && <p className="text-danger text-sm lg:col-span-4">{error}</p>}
           <div className="lg:col-span-4">
             <button disabled={saving} className="bg-primary text-white rounded-xl px-5 py-2 text-sm font-medium disabled:opacity-60">
@@ -155,6 +167,10 @@ export default function HeadOfficeExpensesPage() {
                 <input type="number" step="0.01" value={editForm.amount} onChange={(e) => setEditForm({ ...editForm, amount: Number(e.target.value) })} className="border rounded-xl px-3 py-2" />
                 <input type="date" value={editForm.date} onChange={(e) => setEditForm({ ...editForm, date: e.target.value })} className="border rounded-xl px-3 py-2" />
                 <input value={editForm.description} onChange={(e) => setEditForm({ ...editForm, description: e.target.value })} className="border rounded-xl px-3 py-2" />
+                <select value={editForm.targetProjectId} onChange={(e) => setEditForm({ ...editForm, targetProjectId: e.target.value })} className="border rounded-xl px-3 py-2 lg:col-span-2">
+                  <option value="">{t.allOpenProjects}</option>
+                  {projects.filter((p: any) => p.status !== "CLOSED").map((p: any) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                </select>
               </div>
               <p className="text-xs text-warning">{t.editWarning}</p>
               <div className="flex gap-2">
@@ -179,7 +195,9 @@ export default function HeadOfficeExpensesPage() {
                 </div>
               </div>
               <div className="p-3">
-                <p className="text-xs text-neutral-500 mb-2">{t.thDistribution}:</p>
+                <p className="text-xs text-neutral-500 mb-2">
+                  {exp.targetProjectId ? t.targetProject : t.thDistribution}:
+                </p>
                 <div className="flex flex-wrap gap-2">
                   {exp.distributedExpenses.map((d: any) => (
                     <span key={d.id} className="text-xs bg-neutral-50 border rounded-full px-3 py-1">

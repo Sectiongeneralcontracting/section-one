@@ -31,29 +31,48 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   const newCategory = body.category ?? before.category;
   const newDate = body.date ? new Date(body.date) : before.date;
   const newDescription = body.description ?? before.description ?? categoryLabels[newCategory];
+  const newTargetProjectId = body.targetProjectId !== undefined ? (body.targetProjectId || null) : before.targetProjectId;
 
   let updated;
   try {
     updated = await prisma.$transaction(async (tx) => {
-      // نمسح التوزيع القديم بالكامل ونعيد التوزيع من جديد بالقيمة الجديدة — عشان القيمة على المشاريع تفضل دقيقة
+      // نمسح التوزيع/التحميل القديم بالكامل ونعيد الحساب من جديد بالقيمة والتخصيص الجديدين
       await tx.expense.deleteMany({ where: { sourceHeadOfficeExpenseId: params.id } });
 
       const record = await tx.headOfficeExpense.update({
         where: { id: params.id },
-        data: { amount: newAmount, category: newCategory, date: newDate, description: newDescription },
+        data: { amount: newAmount, category: newCategory, date: newDate, description: newDescription, targetProjectId: newTargetProjectId },
       });
 
-      await distributeExpenseAcrossOpenProjects(tx, {
-        amount: newAmount,
-        category: "ADMINISTRATIVE",
-        description: `${categoryLabels[newCategory] ?? newDescription} — موزّع من مصروفات المكتب الرئيسي`,
-        date: newDate,
-        sourceHeadOfficeExpenseId: record.id,
-      });
+      if (newTargetProjectId) {
+        const project = await tx.project.findUnique({ where: { id: newTargetProjectId } });
+        if (!project) throw new Error("المشروع المحدد غير موجود");
+        await tx.expense.create({
+          data: {
+            projectId: newTargetProjectId,
+            category: "ADMINISTRATIVE",
+            amount: newAmount,
+            description: `${categoryLabels[newCategory] ?? newDescription} — مُحمَّل مباشرة من مصروفات المكتب الرئيسي`,
+            date: newDate,
+            sourceHeadOfficeExpenseId: record.id,
+          },
+        });
+      } else {
+        await distributeExpenseAcrossOpenProjects(tx, {
+          amount: newAmount,
+          category: "ADMINISTRATIVE",
+          description: `${categoryLabels[newCategory] ?? newDescription} — موزّع من مصروفات المكتب الرئيسي`,
+          date: newDate,
+          sourceHeadOfficeExpenseId: record.id,
+        });
+      }
 
       return tx.headOfficeExpense.findUnique({
         where: { id: record.id },
-        include: { distributedExpenses: { include: { project: { select: { id: true, name: true, code: true } } } } },
+        include: {
+          targetProject: { select: { id: true, name: true, code: true } },
+          distributedExpenses: { include: { project: { select: { id: true, name: true, code: true } } } },
+        },
       });
     });
   } catch (err: any) {

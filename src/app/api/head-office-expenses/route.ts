@@ -20,6 +20,7 @@ const schema = z.object({
   amount: z.number().positive(),
   date: z.string().optional(),
   description: z.string().optional(),
+  targetProjectId: z.string().optional(), // فاضي = توزيع على كل المشاريع المفتوحة، محدد = تحميل على المشروع ده بس
 });
 
 const categoryLabels: Record<string, string> = {
@@ -38,7 +39,10 @@ export async function GET() {
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const expenses = await prisma.headOfficeExpense.findMany({
-    include: { distributedExpenses: { include: { project: { select: { id: true, name: true, code: true } } } } },
+    include: {
+      targetProject: { select: { id: true, name: true, code: true } },
+      distributedExpenses: { include: { project: { select: { id: true, name: true, code: true } } } },
+    },
     orderBy: { date: "desc" },
   });
   return NextResponse.json(expenses);
@@ -68,21 +72,42 @@ export async function POST(req: Request) {
           amount: parsed.data.amount,
           description,
           date,
+          targetProjectId: parsed.data.targetProjectId || null,
           createdById: (session.user as any).id,
         },
       });
 
-      await distributeExpenseAcrossOpenProjects(tx, {
-        amount: parsed.data.amount,
-        category: "ADMINISTRATIVE",
-        description: `${label} — موزّع من مصروفات المكتب الرئيسي`,
-        date,
-        sourceHeadOfficeExpenseId: created.id,
-      });
+      if (parsed.data.targetProjectId) {
+        // تحميل مباشر على مشروع واحد بس — من غير توزيع
+        const project = await tx.project.findUnique({ where: { id: parsed.data.targetProjectId } });
+        if (!project) throw new Error("المشروع المحدد غير موجود");
+        await tx.expense.create({
+          data: {
+            projectId: parsed.data.targetProjectId,
+            category: "ADMINISTRATIVE",
+            amount: parsed.data.amount,
+            description: `${label} — مُحمَّل مباشرة من مصروفات المكتب الرئيسي`,
+            date,
+            sourceHeadOfficeExpenseId: created.id,
+          },
+        });
+      } else {
+        // توزيع على كل المشاريع المفتوحة حسب نسبة كل مشروع
+        await distributeExpenseAcrossOpenProjects(tx, {
+          amount: parsed.data.amount,
+          category: "ADMINISTRATIVE",
+          description: `${label} — موزّع من مصروفات المكتب الرئيسي`,
+          date,
+          sourceHeadOfficeExpenseId: created.id,
+        });
+      }
 
       return tx.headOfficeExpense.findUnique({
         where: { id: created.id },
-        include: { distributedExpenses: { include: { project: { select: { id: true, name: true, code: true } } } } },
+        include: {
+          targetProject: { select: { id: true, name: true, code: true } },
+          distributedExpenses: { include: { project: { select: { id: true, name: true, code: true } } } },
+        },
       });
     });
   } catch (err: any) {

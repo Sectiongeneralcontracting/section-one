@@ -205,6 +205,7 @@ model Project {
   siteDailyReports       SiteDailyReport[]
   siteRequests           SiteRequest[]
   quotation              Quotation?
+  headOfficeExpensesTargeted HeadOfficeExpense[]
 
   @@map("projects")
 }
@@ -308,6 +309,9 @@ model HeadOfficeExpense {
   amount      Decimal                   @db.Decimal(18, 2)
   description String?
   date        DateTime                  @default(now())
+  // لو محدد، يتحمّل المصروف بالكامل على المشروع ده بس. لو فاضي (null)، يتوزع على كل المشاريع المفتوحة
+  targetProjectId String?
+  targetProject    Project? @relation(fields: [targetProjectId], references: [id])
   createdById String?
   createdAt   DateTime                  @default(now())
 
