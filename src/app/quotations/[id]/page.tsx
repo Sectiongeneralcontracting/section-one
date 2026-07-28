@@ -151,14 +151,14 @@ export default function QuotationDetailPage() {
 
   if (!quotation) return <AppShell title={t.loading}><></></AppShell>;
 
-  const total = quotation.items.reduce((s: number, i: any) => s + Number(i.quantity) * Number(i.unitPrice), 0);
+  const total = (quotation.items ?? []).reduce((s: number, i: any) => s + Number(i.quantity) * Number(i.unitPrice), 0);
 
   return (
     <AppShell
       title={`${quotation.quotationNumber} — ${quotation.projectName}`}
       action={
         <div className="flex gap-2">
-          <span className={`text-xs px-3 py-2 rounded-xl font-medium ${statusStyles[quotation.status]}`}>{statusLabels[quotation.status][locale]}</span>
+          <span className={`text-xs px-3 py-2 rounded-xl font-medium ${statusStyles[quotation.status]}`}>{statusLabels[quotation.status]?.[locale] ?? quotation.status}</span>
           {quotation.status !== "CONVERTED" && (
             <button onClick={removeQuotation} className="border border-danger text-danger text-sm px-4 py-2 rounded-xl flex items-center gap-1.5">
               <Trash2 size={15} /> {t.deleteQuotation}
@@ -168,7 +168,7 @@ export default function QuotationDetailPage() {
       }
     >
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="card"><p className="text-sm text-neutral-500">{t.client}</p><p className="font-bold">{quotation.client.name}</p></div>
+        <div className="card"><p className="text-sm text-neutral-500">{t.client}</p><p className="font-bold">{quotation.client?.name ?? "—"}</p></div>
         <div className="card"><p className="text-sm text-neutral-500">{t.date}</p><p className="font-bold">{new Date(quotation.date).toLocaleDateString(localeCode)}</p></div>
         <div className="card"><p className="text-sm text-neutral-500">{t.validUntil}</p><p className="font-bold">{quotation.validUntil ? new Date(quotation.validUntil).toLocaleDateString(localeCode) : "—"}</p></div>
         <div className="card"><p className="text-sm text-neutral-500">{t.total}</p><p className="font-bold text-success">{total.toLocaleString(localeCode)} {currency}</p></div>
@@ -218,8 +218,8 @@ export default function QuotationDetailPage() {
             </tr>
           </thead>
           <tbody>
-            {quotation.items.length === 0 && <tr><td className="p-4 text-neutral-400" colSpan={7}>{t.noItems}</td></tr>}
-            {quotation.items.map((i: any) =>
+            {(quotation.items ?? []).length === 0 && <tr><td className="p-4 text-neutral-400" colSpan={7}>{t.noItems}</td></tr>}
+            {(quotation.items ?? []).map((i: any) =>
               editingItemId === i.id ? (
                 <tr key={i.id} className="border-t bg-neutral-50">
                   <td className="p-2"><input value={editItemForm.code} onChange={(e) => setEditItemForm({ ...editItemForm, code: e.target.value })} className="w-full border rounded-lg px-2 py-1" /></td>
@@ -253,18 +253,18 @@ export default function QuotationDetailPage() {
               )
             )}
           </tbody>
-          {quotation.items.length > 0 && (
+          {(quotation.items ?? []).length > 0 && (
             <tfoot><tr className="border-t bg-neutral-50 font-semibold"><td className="p-3" colSpan={5}>{t.total}</td><td className="p-3">{total.toLocaleString(localeCode)} {currency}</td><td /></tr></tfoot>
           )}
         </table>
       </div>
 
       {/* التحويل لعقد */}
-      {quotation.status === "CONVERTED" ? (
+      {quotation.status === "CONVERTED" && quotation.convertedProject ? (
         <div className="card bg-primary/5 border border-primary/20">
           <p className="text-sm">{t.convertedNote} <Link href={`/projects/${quotation.convertedProject.id}`} className="text-primary font-semibold hover:underline">{quotation.convertedProject.name}</Link></p>
         </div>
-      ) : (
+      ) : quotation.status === "CONVERTED" ? null : (
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <h2 className="font-semibold flex items-center gap-2"><ArrowRightCircle size={18} /> {t.convertTitle}</h2>

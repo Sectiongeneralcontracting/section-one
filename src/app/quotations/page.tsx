@@ -150,15 +150,15 @@ export default function QuotationsPage() {
             {loading && <tr><td className="p-4 text-neutral-400" colSpan={7}>{t.loading}</td></tr>}
             {!loading && quotations.length === 0 && <tr><td className="p-4 text-neutral-400" colSpan={7}>{t.empty}</td></tr>}
             {quotations.map((q) => {
-              const total = q.items.reduce((s: number, i: any) => s + Number(i.quantity) * Number(i.unitPrice), 0);
+              const total = (q.items ?? []).reduce((s: number, i: any) => s + Number(i.quantity) * Number(i.unitPrice), 0);
               return (
                 <tr key={q.id} className="border-t hover:bg-neutral-50">
                   <td className="p-3"><Link href={`/quotations/${q.id}`} className="text-primary hover:underline font-mono text-xs">{q.quotationNumber}</Link></td>
-                  <td className="p-3 font-medium">{q.client.name}</td>
+                  <td className="p-3 font-medium">{q.client?.name ?? "—"}</td>
                   <td className="p-3">{q.projectName}</td>
                   <td className="p-3">{total.toLocaleString(localeCode)} {currency}</td>
-                  <td className="p-3"><span className={`text-xs px-2.5 py-1 rounded-full font-medium ${statusStyles[q.status]}`}>{statusLabels[q.status][locale]}</span></td>
-                  <td className="p-3">{q.convertedProject ? <Link href={`/projects/${q.convertedProject.id}`} className="text-primary hover:underline text-xs">{q.convertedProject.name}</Link> : "—"}</td>
+                  <td className="p-3"><span className={`text-xs px-2.5 py-1 rounded-full font-medium ${statusStyles[q.status]}`}>{statusLabels[q.status]?.[locale] ?? q.status}</span></td>
+                  <td className="p-3">{q.convertedProject?.id ? <Link href={`/projects/${q.convertedProject.id}`} className="text-primary hover:underline text-xs">{q.convertedProject.name}</Link> : "—"}</td>
                   <td className="p-3 flex gap-2">
                     <Link href={`/quotations/${q.id}`} className="text-primary hover:opacity-70"><Pencil size={14} /></Link>
                     {q.status !== "CONVERTED" && (

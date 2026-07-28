@@ -109,18 +109,27 @@ export async function DELETE(_req: Request, { params }: { params: { id: string }
 
   const client = await prisma.client.findUnique({
     where: { id: params.id },
-    include: { projects: true },
+    include: { projects: true, quotations: true },
   });
   if (!client) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  // منع حذف أي عميل مرتبط بمشروع (Security requirement)
+  // منع حذف أي عميل مرتبط بمشروع أو عرض سعر (Security requirement)
   if (client.projects.length > 0)
     return NextResponse.json(
       { error: "لا يمكن حذف عميل مرتبط بمشروع — احذف/انقل المشاريع أولاً" },
       { status: 403 }
     );
+  if (client.quotations.length > 0)
+    return NextResponse.json(
+      { error: "لا يمكن حذف عميل له عروض أسعار مسجلة — احذف عروض الأسعار الأول" },
+      { status: 403 }
+    );
 
-  await prisma.client.delete({ where: { id: params.id } });
+  try {
+    await prisma.client.delete({ where: { id: params.id } });
+  } catch {
+    return NextResponse.json({ error: "تعذر حذف العميل لأن له بيانات مرتبطة" }, { status: 400 });
+  }
   await logAudit({
     userId: (session.user as any).id,
     action: "CLIENT_DELETED",
