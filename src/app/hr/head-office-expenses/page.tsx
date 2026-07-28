@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { AppShell } from "@/components/layout/app-shell";
 import { useLocale } from "@/lib/use-locale";
-import { Plus, X } from "lucide-react";
+import { Plus, X, Pencil, Trash2 } from "lucide-react";
 
 const categoryLabels: Record<string, { ar: string; en: string }> = {
   OFFICE_RENT: { ar: "إيجار المكتب", en: "Office Rent" },
@@ -24,6 +24,8 @@ const dict = {
     thCategory: "البند", thAmount: "القيمة", thDate: "التاريخ", thDistribution: "توزيعه على المشاريع",
     loading: "جارٍ التحميل...", empty: "لا يوجد مصروفات مكتب رئيسي مسجلة بعد.",
     note: "أي مصروف بتسجله هنا بيتوزع تلقائيًا كمصروف على كل المشاريع المفتوحة (الجارية) حسب نسبة قيمة كل مشروع من إجمالي قيمة المشاريع المفتوحة وقت التسجيل.",
+    saveEdit: "حفظ", cancelEdit: "إلغاء", confirmDelete: "تأكيد حذف المصروف؟ ده هيمسح توزيعه من على كل المشاريع كمان. العملية لا يمكن التراجع عنها.",
+    errDelete: "تعذر الحذف", editWarning: "التعديل هيعيد توزيع القيمة الجديدة على المشاريع المفتوحة الحالية تلقائيًا.",
   },
   en: {
     title: "Head Office Expenses", newExpense: "New Expense", cancel: "Cancel",
@@ -32,6 +34,8 @@ const dict = {
     thCategory: "Category", thAmount: "Amount", thDate: "Date", thDistribution: "Distributed To",
     loading: "Loading...", empty: "No head office expenses recorded yet.",
     note: "Any expense recorded here is automatically distributed as an expense across all open (ongoing) projects, proportional to each project's contract value at the time of recording.",
+    saveEdit: "Save", cancelEdit: "Cancel", confirmDelete: "Confirm deleting this expense? This will also remove its distribution across all projects. This cannot be undone.",
+    errDelete: "Failed to delete", editWarning: "Editing will re-distribute the new amount across currently open projects automatically.",
   },
 };
 
@@ -46,6 +50,8 @@ export default function HeadOfficeExpensesPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [form, setForm] = useState({ category: "OFFICE_RENT", amount: 0, date: "", description: "" });
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState({ category: "OFFICE_RENT", amount: 0, date: "", description: "" });
 
   async function load() {
     setLoading(true);
@@ -69,6 +75,29 @@ export default function HeadOfficeExpensesPage() {
     if (!res.ok) return setError((await res.json()).error ?? t.err);
     setForm({ category: "OFFICE_RENT", amount: 0, date: "", description: "" });
     setShowForm(false);
+    load();
+  }
+
+  function startEdit(exp: any) {
+    setEditingId(exp.id);
+    setEditForm({ category: exp.category, amount: Number(exp.amount), date: new Date(exp.date).toISOString().slice(0, 10), description: exp.description ?? "" });
+  }
+
+  async function saveEdited(expId: string) {
+    const res = await fetch(`/api/head-office-expenses/${expId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(editForm),
+    });
+    if (!res.ok) return alert((await res.json()).error ?? t.errDelete);
+    setEditingId(null);
+    load();
+  }
+
+  async function removeExpense(expId: string) {
+    if (!confirm(t.confirmDelete)) return;
+    const res = await fetch(`/api/head-office-expenses/${expId}`, { method: "DELETE" });
+    if (!res.ok) return alert((await res.json()).error ?? t.errDelete);
     load();
   }
 
@@ -116,30 +145,52 @@ export default function HeadOfficeExpensesPage() {
       <div className="space-y-3">
         {loading && <p className="text-sm text-neutral-400">{t.loading}</p>}
         {!loading && expenses.length === 0 && <p className="text-sm text-neutral-400">{t.empty}</p>}
-        {expenses.map((exp) => (
-          <div key={exp.id} className="card !p-0 overflow-hidden">
-            <div className="p-3 border-b flex items-center justify-between">
-              <div>
-                <p className="font-medium text-sm">{categoryLabels[exp.category]?.[locale]}</p>
-                <p className="text-xs text-neutral-400">{exp.description}</p>
+        {expenses.map((exp) =>
+          editingId === exp.id ? (
+            <div key={exp.id} className="card space-y-3 bg-neutral-50">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                <select value={editForm.category} onChange={(e) => setEditForm({ ...editForm, category: e.target.value })} className="border rounded-xl px-3 py-2">
+                  {Object.entries(categoryLabels).map(([k, v]) => <option key={k} value={k}>{v[locale]}</option>)}
+                </select>
+                <input type="number" step="0.01" value={editForm.amount} onChange={(e) => setEditForm({ ...editForm, amount: Number(e.target.value) })} className="border rounded-xl px-3 py-2" />
+                <input type="date" value={editForm.date} onChange={(e) => setEditForm({ ...editForm, date: e.target.value })} className="border rounded-xl px-3 py-2" />
+                <input value={editForm.description} onChange={(e) => setEditForm({ ...editForm, description: e.target.value })} className="border rounded-xl px-3 py-2" />
               </div>
-              <div className="text-right">
-                <p className="font-bold">{Number(exp.amount).toLocaleString(localeCode)} {currency}</p>
-                <p className="text-xs text-neutral-400">{new Date(exp.date).toLocaleDateString(localeCode)}</p>
-              </div>
-            </div>
-            <div className="p-3">
-              <p className="text-xs text-neutral-500 mb-2">{t.thDistribution}:</p>
-              <div className="flex flex-wrap gap-2">
-                {exp.distributedExpenses.map((d: any) => (
-                  <span key={d.id} className="text-xs bg-neutral-50 border rounded-full px-3 py-1">
-                    {d.project.name}: <span className="font-medium">{Number(d.amount).toLocaleString(localeCode)} {currency}</span>
-                  </span>
-                ))}
+              <p className="text-xs text-warning">{t.editWarning}</p>
+              <div className="flex gap-2">
+                <button onClick={() => saveEdited(exp.id)} className="bg-primary text-white rounded-xl px-4 py-1.5 text-xs font-medium">{t.saveEdit}</button>
+                <button onClick={() => setEditingId(null)} className="border rounded-xl px-4 py-1.5 text-xs">{t.cancelEdit}</button>
               </div>
             </div>
-          </div>
-        ))}
+          ) : (
+            <div key={exp.id} className="card !p-0 overflow-hidden">
+              <div className="p-3 border-b flex items-center justify-between">
+                <div>
+                  <p className="font-medium text-sm">{categoryLabels[exp.category]?.[locale] ?? exp.category}</p>
+                  <p className="text-xs text-neutral-400">{exp.description}</p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="text-right">
+                    <p className="font-bold">{Number(exp.amount).toLocaleString(localeCode)} {currency}</p>
+                    <p className="text-xs text-neutral-400">{new Date(exp.date).toLocaleDateString(localeCode)}</p>
+                  </div>
+                  <button onClick={() => startEdit(exp)} className="text-primary hover:opacity-70"><Pencil size={15} /></button>
+                  <button onClick={() => removeExpense(exp.id)} className="text-danger hover:opacity-70"><Trash2 size={15} /></button>
+                </div>
+              </div>
+              <div className="p-3">
+                <p className="text-xs text-neutral-500 mb-2">{t.thDistribution}:</p>
+                <div className="flex flex-wrap gap-2">
+                  {exp.distributedExpenses.map((d: any) => (
+                    <span key={d.id} className="text-xs bg-neutral-50 border rounded-full px-3 py-1">
+                      {d.project.name}: <span className="font-medium">{Number(d.amount).toLocaleString(localeCode)} {currency}</span>
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )
+        )}
       </div>
     </AppShell>
   );
