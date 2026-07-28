@@ -322,21 +322,21 @@ export default function QuotationDetailPage() {
       </div>
 
       {/* قسم مخصص للطباعة فقط — بنفس شكل ملف Word المُصدَّر */}
-      <div className="hidden print:block" dir="rtl">
-        <div className="flex items-start justify-between">
+      <div className="hidden print:block" dir="rtl" style={{ marginTop: 0, paddingTop: 0 }}>
+        <div className="flex items-start justify-between" style={{ marginTop: 0 }}>
           <div className="text-right">
             <p className="text-sm font-semibold">{t.offerNumber}: {quotation.quotationNumber}</p>
             <p className="text-xs text-neutral-500">{new Date(quotation.date).toLocaleDateString(localeCode, { year: "numeric", month: "long", day: "numeric" })}</p>
           </div>
-          <div className="text-center -mt-6">
+          <div className="text-center" style={{ marginTop: 0 }}>
             {company?.logoUrl ? (
-              <img src={company.logoUrl} alt="" className="h-96 w-96 object-contain" />
+              <img src={company.logoUrl} alt="" className="h-96 w-96 object-contain" style={{ marginTop: 0, display: "block" }} />
             ) : (
               <p className="text-lg font-bold" style={{ color: "#C9692E" }}>{company?.name ?? "Section General Contracting"}</p>
             )}
           </div>
         </div>
-        <h1 className="text-center text-2xl font-bold -mt-6 mb-6">{locale === "ar" ? "عرض سعر" : "Quotation"}</h1>
+        <h1 className="text-center text-2xl font-bold" style={{ marginTop: 0, marginBottom: 24 }}>{locale === "ar" ? "عرض سعر" : "Quotation"}</h1>
 
         <p className="font-bold mb-1">{locale === "ar" ? "السادة/" : "Dear"} {quotation.client?.name ?? "—"} {t.dearSir}</p>
         <p className="mb-1">{t.greeting}</p>
