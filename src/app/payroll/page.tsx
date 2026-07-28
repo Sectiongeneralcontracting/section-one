@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { AppShell } from "@/components/layout/app-shell";
 import { useLocale } from "@/lib/use-locale";
-import { Plus, X, Banknote } from "lucide-react";
+import { Plus, X, Banknote, Trash2 } from "lucide-react";
 
 const statusLabels: Record<string, { ar: string; en: string }> = {
   DRAFT: { ar: "مسودة", en: "Draft" },
@@ -94,6 +94,13 @@ export default function PayrollPage() {
     load();
   }
 
+  async function removeRecord(id: string) {
+    if (!confirm(locale === "ar" ? "تأكيد حذف سجل الراتب؟" : "Confirm deleting this payroll record?")) return;
+    const res = await fetch(`/api/payroll/${id}`, { method: "DELETE" });
+    if (!res.ok) return alert((await res.json()).error ?? t.errAction);
+    load();
+  }
+
   function exportBankTransfer() {
     window.open(`/api/payroll/bank-transfer?month=${month}`, "_blank");
   }
@@ -172,9 +179,10 @@ export default function PayrollPage() {
                 <td className="p-3">{Number(r.deductions).toLocaleString(localeCode)}</td>
                 <td className="p-3 font-semibold">{Number(r.netSalary).toLocaleString(localeCode)}</td>
                 <td className="p-3"><span className={`text-xs px-2.5 py-1 rounded-full font-medium ${statusStyles[r.status]}`}>{statusLabels[r.status][locale]}</span></td>
-                <td className="p-3">
+                <td className="p-3 flex gap-2">
                   {r.status === "DRAFT" && <button onClick={() => transition(r.id, "APPROVED")} className="text-primary text-xs">{t.approve}</button>}
                   {r.status === "APPROVED" && <button onClick={() => transition(r.id, "PAID")} className="text-success text-xs">{t.pay}</button>}
+                  {r.status === "DRAFT" && <button onClick={() => removeRecord(r.id)} className="text-danger hover:opacity-70"><Trash2 size={14} /></button>}
                 </td>
               </tr>
             ))}

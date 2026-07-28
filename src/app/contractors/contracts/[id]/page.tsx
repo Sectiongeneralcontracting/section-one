@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { AppShell } from "@/components/layout/app-shell";
 import { useLocale } from "@/lib/use-locale";
-import { Plus, X } from "lucide-react";
+import { Plus, X, Trash2 } from "lucide-react";
 
 const certStatusLabels: Record<string, { ar: string; en: string }> = {
   DRAFT: { ar: "مسودة", en: "Draft" },
@@ -100,6 +100,13 @@ export default function SubcontractorContractPage() {
     refresh();
   }
 
+  async function removeCertificate(certId: string) {
+    if (!confirm(locale === "ar" ? "تأكيد حذف المستخلص؟" : "Confirm deleting this certificate?")) return;
+    const res = await fetch(`/api/subcontractor-certificates/${certId}`, { method: "DELETE" });
+    if (!res.ok) return alert((await res.json()).error);
+    refresh();
+  }
+
   async function addPayment(e: React.FormEvent) {
     e.preventDefault();
     setPaySaving(true);
@@ -179,9 +186,12 @@ export default function SubcontractorContractPage() {
                 <td className="p-3">{Number(c.cumulativePct)}%</td>
                 <td className="p-3 font-semibold">{Number(c.thisPeriodValue).toLocaleString(localeCode)} {currency}</td>
                 <td className="p-3"><span className={`text-xs px-2.5 py-1 rounded-full font-medium ${certStatusStyles[c.status]}`}>{certStatusLabels[c.status][locale]}</span></td>
-                <td className="p-3">
+                <td className="p-3 flex gap-2">
                   {c.status !== "PAID" && (
                     <button onClick={() => advanceCertificate(c.id)} className="text-primary text-xs">{nextLabel[c.status][locale]}</button>
+                  )}
+                  {c.status === "DRAFT" && (
+                    <button onClick={() => removeCertificate(c.id)} className="text-danger hover:opacity-70"><Trash2 size={14} /></button>
                   )}
                 </td>
               </tr>

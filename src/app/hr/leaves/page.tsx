@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { AppShell } from "@/components/layout/app-shell";
 import { useLocale } from "@/lib/use-locale";
-import { Plus, X } from "lucide-react";
+import { Plus, X, Trash2 } from "lucide-react";
 
 const typeLabels: Record<string, { ar: string; en: string }> = {
   ANNUAL: { ar: "سنوية", en: "Annual" },
@@ -89,6 +89,13 @@ export default function LeavesPage() {
     load();
   }
 
+  async function removeLeave(leaveId: string) {
+    if (!confirm(locale === "ar" ? "تأكيد حذف طلب الإجازة؟" : "Confirm deleting this leave request?")) return;
+    const res = await fetch(`/api/leave-requests/${leaveId}`, { method: "DELETE" });
+    if (!res.ok) return alert((await res.json()).error ?? t.err);
+    load();
+  }
+
   return (
     <AppShell
       title={t.title}
@@ -158,6 +165,7 @@ export default function LeavesPage() {
                       <button onClick={() => transition(l.id, "REJECTED")} className="text-danger text-xs">{t.reject}</button>
                     </>
                   )}
+                  <button onClick={() => removeLeave(l.id)} className="text-danger hover:opacity-70"><Trash2 size={14} /></button>
                 </td>
               </tr>
             ))}

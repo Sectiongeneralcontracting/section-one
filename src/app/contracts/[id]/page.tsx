@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { AppShell } from "@/components/layout/app-shell";
 import { useLocale } from "@/lib/use-locale";
-import { Plus, X, Pencil } from "lucide-react";
+import { Plus, X, Pencil, Trash2 } from "lucide-react";
 
 const statusLabels: Record<string, { ar: string; en: string }> = {
   DRAFT: { ar: "مسودة", en: "Draft" },
@@ -151,6 +151,13 @@ export default function ContractDetailPage() {
     load();
   }
 
+  async function removeCertificate(certId: string) {
+    if (!confirm(locale === "ar" ? "تأكيد حذف المستخلص؟" : "Confirm deleting this certificate?")) return;
+    const res = await fetch(`/api/certificates/${certId}`, { method: "DELETE" });
+    if (!res.ok) return alert((await res.json()).error ?? t.errAction);
+    load();
+  }
+
   if (!contract) return <AppShell title={t.loading}><></></AppShell>;
 
   const boqTotal = contract.boqItems.reduce((s: number, i: any) => s + Number(i.quantity) * Number(i.unitPrice), 0);
@@ -277,10 +284,11 @@ export default function ContractDetailPage() {
                 <td className="p-3">{Number(c.advanceRecoveryAmount).toLocaleString(localeCode)}</td>
                 <td className="p-3 font-semibold">{Number(c.netPayable).toLocaleString(localeCode)}</td>
                 <td className="p-3"><span className={`text-xs px-2.5 py-1 rounded-full font-medium ${statusStyles[c.status]}`}>{statusLabels[c.status][locale]}</span></td>
-                <td className="p-3">
+                <td className="p-3 flex gap-2">
                   {c.status === "DRAFT" && <button onClick={() => transitionCert(c.id, "submit")} className="text-primary text-xs">{t.submit}</button>}
                   {c.status === "SUBMITTED" && <button onClick={() => transitionCert(c.id, "approve")} className="text-primary text-xs">{t.approve}</button>}
                   {c.status === "APPROVED" && <button onClick={() => transitionCert(c.id, "pay")} className="text-success text-xs">{t.markPaid}</button>}
+                  {c.status === "DRAFT" && <button onClick={() => removeCertificate(c.id)} className="text-danger hover:opacity-70"><Trash2 size={14} /></button>}
                 </td>
               </tr>
             ))}

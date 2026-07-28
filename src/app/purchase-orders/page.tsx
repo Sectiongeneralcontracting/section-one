@@ -116,6 +116,13 @@ export default function PurchaseOrdersPage() {
     load();
   }
 
+  async function removeOrder(id: string) {
+    if (!confirm(locale === "ar" ? "تأكيد حذف أمر الشراء؟" : "Confirm deleting this purchase order?")) return;
+    const res = await fetch(`/api/purchase-orders/${id}`, { method: "DELETE" });
+    if (!res.ok) return alert((await res.json()).error ?? t.errAction);
+    load();
+  }
+
   return (
     <AppShell
       title={t.title}
@@ -211,6 +218,9 @@ export default function PurchaseOrdersPage() {
                     {nextAction[o.status].map((a) => (
                       <button key={a.status} onClick={() => transition(o.id, a.status)} className="text-primary text-xs hover:underline">{a[locale]}</button>
                     ))}
+                    {o.status === "DRAFT" && (
+                      <button onClick={() => removeOrder(o.id)} className="text-danger hover:opacity-70"><Trash2 size={14} /></button>
+                    )}
                   </td>
                 </tr>
               );

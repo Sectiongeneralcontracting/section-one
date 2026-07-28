@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { AppShell } from "@/components/layout/app-shell";
 import { useLocale } from "@/lib/use-locale";
-import { Plus, X, Wrench } from "lucide-react";
+import { Plus, X, Wrench, Trash2 } from "lucide-react";
 
 const statusLabels: Record<string, { ar: string; en: string }> = {
   AVAILABLE: { ar: "متاحة", en: "Available" },
@@ -30,6 +30,7 @@ const dict = {
     endMaintenance: "إنهاء الصيانة",
     confirmUnassign: "تأكيد إنهاء تخصيص المعدة؟", confirmNeedsMaintenance: "هل تحتاج المعدة لصيانة؟ (موافق = نعم، إلغاء = لا)",
     errAssign: "تعذر التخصيص", errUnassign: "تعذر الإنهاء", errMaintLog: "تعذر التسجيل",
+    confirmDeleteEquipment: "تأكيد حذف المعدة؟", errDelete: "تعذر الحذف",
   },
   en: {
     title: "Equipment", newEquipment: "New Equipment", cancel: "Cancel",
@@ -42,6 +43,7 @@ const dict = {
     endMaintenance: "End Maintenance",
     confirmUnassign: "Confirm ending equipment assignment?", confirmNeedsMaintenance: "Does it need maintenance? (OK = yes, Cancel = no)",
     errAssign: "Failed to assign", errUnassign: "Failed to end", errMaintLog: "Failed to log",
+    confirmDeleteEquipment: "Confirm deleting this equipment?", errDelete: "Failed to delete",
   },
 };
 
@@ -134,6 +136,13 @@ export default function EquipmentPage() {
     load();
   }
 
+  async function removeEquipment(id: string) {
+    if (!confirm(t.confirmDeleteEquipment)) return;
+    const res = await fetch(`/api/equipment/${id}`, { method: "DELETE" });
+    if (!res.ok) return alert((await res.json()).error ?? t.errDelete);
+    load();
+  }
+
   return (
     <AppShell
       title={t.title}
@@ -203,6 +212,9 @@ export default function EquipmentPage() {
                   )}
                   {eq.status === "MAINTENANCE" && (
                     <button onClick={() => markAvailable(eq.id)} className="text-success text-xs">{t.endMaintenance}</button>
+                  )}
+                  {eq.status === "AVAILABLE" && (
+                    <button onClick={() => removeEquipment(eq.id)} className="text-danger hover:opacity-70"><Trash2 size={14} /></button>
                   )}
                 </td>
               </tr>

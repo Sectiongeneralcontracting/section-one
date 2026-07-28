@@ -409,6 +409,13 @@ export default function ProjectDetailPage() {
     load();
   }
 
+  async function removeVo(voId: string) {
+    if (!confirm(locale === "ar" ? "تأكيد حذف أمر التغيير؟" : "Confirm deleting this variation order?")) return;
+    const res = await fetch(`/api/variation-orders/${voId}`, { method: "DELETE" });
+    if (!res.ok) return alert((await res.json()).error ?? t.errVariationOrder);
+    load();
+  }
+
   async function closeProject() {
     if (!confirm(t.confirmClose)) return;
     const res = await fetch(`/api/projects/${id}`, {
@@ -758,6 +765,7 @@ export default function ProjectDetailPage() {
                     <>
                       <button onClick={() => transitionVo(v.id, "APPROVED")} className="text-success text-xs">{t.approve}</button>
                       <button onClick={() => transitionVo(v.id, "REJECTED")} className="text-danger text-xs">{t.reject}</button>
+                      <button onClick={() => removeVo(v.id)} className="text-danger hover:opacity-70"><Trash2 size={14} /></button>
                     </>
                   )}
                 </td>
