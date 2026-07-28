@@ -16,6 +16,7 @@ const items = [
   { href: "/suppliers", label: "الموردون", labelEn: "Suppliers", icon: Truck, module: "suppliers" },
   { href: "/purchase-orders", label: "أوامر الشراء", labelEn: "Purchase Orders", icon: ShoppingCart, module: "purchase-orders" },
   { href: "/inventory", label: "المخازن", labelEn: "Inventory", icon: Warehouse, module: "inventory" },
+  { href: "/stock-movements", label: "سجل حركات المخزون", labelEn: "Stock Movements Log", icon: ClipboardList, module: "inventory" },
   { href: "/equipment", label: "المعدات", labelEn: "Equipment", icon: HardHat, module: "equipment" },
   { href: "/contractors", label: "مقاولو الباطن", labelEn: "Contractors", icon: HardHat, module: "contractors" },
   { href: "/site-reports", label: "إدارة الموقع", labelEn: "Site Management", icon: ClipboardList, module: "site-reports" },
