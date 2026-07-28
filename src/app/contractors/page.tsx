@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { AppShell } from "@/components/layout/app-shell";
 import { useLocale } from "@/lib/use-locale";
-import { Plus, X, Pencil } from "lucide-react";
+import { Plus, X, Pencil, Trash2 } from "lucide-react";
 
 const dict = {
   ar: {
@@ -12,6 +12,7 @@ const dict = {
     editTitle: "تعديل بيانات المقاول", newTitle: "مقاول باطن جديد",
     name: "الاسم *", specialty: "التخصص", phone: "الهاتف", email: "البريد الإلكتروني",
     taxNumber: "الرقم الضريبي", address: "العنوان", save: "حفظ", saveEdit: "حفظ التعديلات", saving: "جارٍ الحفظ...", err: "تعذر الحفظ",
+    confirmDelete: "تأكيد حذف المقاول نهائيًا؟ العملية لا يمكن التراجع عنها.", errDelete: "تعذر الحذف — لو المقاول له عقود مسجلة مش هيتحذف",
     thName: "الاسم", thSpecialty: "التخصص", thContracts: "عدد العقود", thPaid: "إجمالي المدفوع", thRating: "متوسط التقييم",
     loading: "جارٍ التحميل...", empty: "لا يوجد مقاولو باطن مسجلين بعد.",
   },
@@ -20,6 +21,7 @@ const dict = {
     editTitle: "Edit Subcontractor", newTitle: "New Subcontractor",
     name: "Name *", specialty: "Specialty", phone: "Phone", email: "Email",
     taxNumber: "Tax Number", address: "Address", save: "Save", saveEdit: "Save Changes", saving: "Saving...", err: "Failed to save",
+    confirmDelete: "Confirm permanently deleting this subcontractor? This cannot be undone.", errDelete: "Failed to delete — cannot delete if the subcontractor has registered contracts",
     thName: "Name", thSpecialty: "Specialty", thContracts: "Contracts", thPaid: "Total Paid", thRating: "Avg. Rating",
     loading: "Loading...", empty: "No subcontractors registered yet.",
   },
@@ -85,6 +87,13 @@ export default function ContractorsPage() {
     load();
   }
 
+  async function removeSubcontractor(subId: string) {
+    if (!confirm(t.confirmDelete)) return;
+    const res = await fetch(`/api/subcontractors/${subId}`, { method: "DELETE" });
+    if (!res.ok) return alert((await res.json()).error ?? t.errDelete);
+    load();
+  }
+
   return (
     <AppShell
       title={t.title}
@@ -143,7 +152,10 @@ export default function ContractorsPage() {
                   <td className="p-3">{s.contracts.length}</td>
                   <td className="p-3">{totalPaid.toLocaleString(localeCode)} {currency}</td>
                   <td className="p-3">{avgRating} / 5</td>
-                  <td className="p-3"><button onClick={() => startEdit(s)} className="text-primary hover:opacity-70"><Pencil size={15} /></button></td>
+                  <td className="p-3 flex gap-2">
+                    <button onClick={() => startEdit(s)} className="text-primary hover:opacity-70"><Pencil size={15} /></button>
+                    <button onClick={() => removeSubcontractor(s.id)} className="text-danger hover:opacity-70"><Trash2 size={15} /></button>
+                  </td>
                 </tr>
               );
             })}
