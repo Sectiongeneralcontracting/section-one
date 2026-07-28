@@ -47,7 +47,7 @@ function currentMonth() {
 export default function MyAttendancePage() {
   const locale = useLocale();
   const t = dict[locale];
-  const localeCode = locale === "ar" ? "ar-EG" : "en-US";
+  const localeCode = locale === "ar" ? "ar-EG-u-nu-latn" : "en-US";
 
   const [data, setData] = useState<any>(null);
   const [month, setMonth] = useState(currentMonth());

@@ -51,7 +51,7 @@ export function NotificationBell() {
           {notifs.map((n) => (
             <div key={n.id} className={`p-3 border-b text-sm ${n.isRead ? "text-neutral-500" : "font-medium"}`}>
               {n.message}
-              <div className="text-xs text-neutral-400 mt-1">{new Date(n.createdAt).toLocaleString("ar-EG")}</div>
+              <div className="text-xs text-neutral-400 mt-1">{new Date(n.createdAt).toLocaleString("ar-EG-u-nu-latn")}</div>
             </div>
           ))}
         </div>

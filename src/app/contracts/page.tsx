@@ -160,7 +160,7 @@ export default function ContractsPage() {
               <tr key={c.id} className="border-t hover:bg-neutral-50">
                 <td className="p-3"><Link href={`/contracts/${c.id}`} className="text-primary hover:underline">{c.contractNumber}</Link></td>
                 <td className="p-3 font-medium">{c.project.name}</td>
-                <td className="p-3">{new Date(c.signedDate).toLocaleDateString(locale === "ar" ? "ar-EG" : "en-US")}</td>
+                <td className="p-3">{new Date(c.signedDate).toLocaleDateString(locale === "ar" ? "ar-EG-u-nu-latn" : "en-US")}</td>
                 <td className="p-3">{Number(c.retentionPct)}%</td>
                 <td className="p-3">{c.certificates.length}</td>
                 <td className="p-3 flex gap-2">

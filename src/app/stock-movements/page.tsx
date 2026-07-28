@@ -33,7 +33,7 @@ const dict = {
 export default function StockMovementsPage() {
   const locale = useLocale();
   const t = dict[locale];
-  const localeCode = locale === "ar" ? "ar-EG" : "en-US";
+  const localeCode = locale === "ar" ? "ar-EG-u-nu-latn" : "en-US";
 
   const [movements, setMovements] = useState<any[]>([]);
   const [items, setItems] = useState<any[]>([]);

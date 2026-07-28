@@ -334,7 +334,7 @@ export default function ClientsPage() {
                 <td className="p-3">
                   {c.projects
                     .reduce((s, p) => s + Number(p.contractValue), 0)
-                    .toLocaleString(locale === "ar" ? "ar-EG" : "en-US")}{" "}
+                    .toLocaleString(locale === "ar" ? "ar-EG-u-nu-latn" : "en-US")}{" "}
                   {locale === "ar" ? "ج.م" : "EGP"}
                 </td>
                 <td className="p-3 flex gap-2">

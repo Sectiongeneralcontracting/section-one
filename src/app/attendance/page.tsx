@@ -45,7 +45,7 @@ const dict = {
 export default function AttendancePage() {
   const locale = useLocale();
   const t = dict[locale];
-  const localeCode = locale === "ar" ? "ar-EG" : "en-US";
+  const localeCode = locale === "ar" ? "ar-EG-u-nu-latn" : "en-US";
   const [employees, setEmployees] = useState<any[]>([]);
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [records, setRecords] = useState<any[]>([]);

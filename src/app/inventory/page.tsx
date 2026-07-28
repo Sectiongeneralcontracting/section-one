@@ -172,7 +172,7 @@ export default function InventoryPage() {
     load();
   }
 
-  const localeCode = locale === "ar" ? "ar-EG" : "en-US";
+  const localeCode = locale === "ar" ? "ar-EG-u-nu-latn" : "en-US";
 
   return (
     <AppShell

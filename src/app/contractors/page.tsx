@@ -32,7 +32,7 @@ const emptyForm = { name: "", specialty: "", phone: "", email: "", taxNumber: ""
 export default function ContractorsPage() {
   const locale = useLocale();
   const t = dict[locale];
-  const localeCode = locale === "ar" ? "ar-EG" : "en-US";
+  const localeCode = locale === "ar" ? "ar-EG-u-nu-latn" : "en-US";
   const currency = locale === "ar" ? "ج.م" : "EGP";
   const [subs, setSubs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);

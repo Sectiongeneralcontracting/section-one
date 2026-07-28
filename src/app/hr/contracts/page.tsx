@@ -29,7 +29,7 @@ const dict = {
 export default function EmployeeContractsPage() {
   const locale = useLocale();
   const t = dict[locale];
-  const localeCode = locale === "ar" ? "ar-EG" : "en-US";
+  const localeCode = locale === "ar" ? "ar-EG-u-nu-latn" : "en-US";
   const currency = locale === "ar" ? "ج.م" : "EGP";
   const [contracts, setContracts] = useState<any[]>([]);
   const [employees, setEmployees] = useState<any[]>([]);

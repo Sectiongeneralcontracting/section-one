@@ -7,7 +7,7 @@ export function cn(...inputs: ClassValue[]) {
 
 export function formatCurrency(value: number | string, currency = "EGP") {
   const num = typeof value === "string" ? parseFloat(value) : value;
-  return new Intl.NumberFormat("ar-EG", {
+  return new Intl.NumberFormat("ar-EG-u-nu-latn", {
     style: "currency",
     currency,
     maximumFractionDigits: 2,

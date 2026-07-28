@@ -160,7 +160,7 @@ export default function EmployeesPage() {
     load();
   }
 
-  const localeCode = locale === "ar" ? "ar-EG" : "en-US";
+  const localeCode = locale === "ar" ? "ar-EG-u-nu-latn" : "en-US";
   const currency = locale === "ar" ? "ج.م" : "EGP";
   const activeProjects = projects.filter((p) => p.status !== "CLOSED");
 

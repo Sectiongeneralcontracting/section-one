@@ -26,7 +26,7 @@ export function MonthlyProfitChart({ data }: { data: { month: string; profit: nu
         <BarChart data={data}>
           <XAxis dataKey="month" tick={{ fontSize: 12 }} />
           <YAxis tick={{ fontSize: 12 }} />
-          <Tooltip formatter={(v: number) => v.toLocaleString("ar-EG") + " ج.م"} />
+          <Tooltip formatter={(v: number) => v.toLocaleString("ar-EG-u-nu-latn") + " ج.م"} />
           <Bar dataKey="profit" fill="#C9692E" radius={[6, 6, 0, 0]} />
         </BarChart>
       </ResponsiveContainer>
@@ -44,7 +44,7 @@ export function ExpensesByCategoryChart({ data }: { data: { name: string; value:
           <Pie data={data} dataKey="value" nameKey="name" innerRadius={45} outerRadius={80}>
             {data.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
           </Pie>
-          <Tooltip formatter={(v: number) => v.toLocaleString("ar-EG") + " ج.م"} />
+          <Tooltip formatter={(v: number) => v.toLocaleString("ar-EG-u-nu-latn") + " ج.م"} />
         </PieChart>
       </ResponsiveContainer>
     </div>
@@ -53,7 +53,7 @@ export function ExpensesByCategoryChart({ data }: { data: { name: string; value:
 
 export function ClientProjectsChart({ data }: { data: { name: string; value: number; paid: number; remaining: number }[] }) {
   const locale = useLocale();
-  const localeCode = locale === "ar" ? "ar-EG" : "en-US";
+  const localeCode = locale === "ar" ? "ar-EG-u-nu-latn" : "en-US";
   const currency = locale === "ar" ? "ج.م" : "EGP";
   const fmt = (v: number) => v.toLocaleString(localeCode);
 

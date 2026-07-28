@@ -274,9 +274,9 @@ export default function ProjectsPage() {
       )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <KpiCard label={t.kpiValue} value={`${kpis.totalContracts.toLocaleString(locale === "ar" ? "ar-EG" : "en-US")} ${locale === "ar" ? "ج.م" : "EGP"}`} icon={Coins} tone="primary" />
-        <KpiCard label={t.kpiExpenses} value={`${kpis.totalExpenses.toLocaleString(locale === "ar" ? "ar-EG" : "en-US")} ${locale === "ar" ? "ج.م" : "EGP"}`} icon={TrendingDown} tone="danger" />
-        <KpiCard label={t.kpiProfit} value={`${kpis.totalProfit.toLocaleString(locale === "ar" ? "ar-EG" : "en-US")} ${locale === "ar" ? "ج.م" : "EGP"}`} icon={TrendingUp} tone="success" />
+        <KpiCard label={t.kpiValue} value={`${kpis.totalContracts.toLocaleString(locale === "ar" ? "ar-EG-u-nu-latn" : "en-US")} ${locale === "ar" ? "ج.م" : "EGP"}`} icon={Coins} tone="primary" />
+        <KpiCard label={t.kpiExpenses} value={`${kpis.totalExpenses.toLocaleString(locale === "ar" ? "ar-EG-u-nu-latn" : "en-US")} ${locale === "ar" ? "ج.م" : "EGP"}`} icon={TrendingDown} tone="danger" />
+        <KpiCard label={t.kpiProfit} value={`${kpis.totalProfit.toLocaleString(locale === "ar" ? "ar-EG-u-nu-latn" : "en-US")} ${locale === "ar" ? "ج.م" : "EGP"}`} icon={TrendingUp} tone="success" />
         <KpiCard label={t.kpiCount} value={String(kpis.count)} icon={Briefcase} tone="primary" />
       </div>
 
@@ -332,15 +332,15 @@ export default function ProjectsPage() {
                   <Link href={`/projects/${p.id}`} className="hover:underline">{p.name}</Link>
                 </td>
                 <td className="p-3">{p.client.name}</td>
-                <td className="p-3">{Number(p.contractValue).toLocaleString(locale === "ar" ? "ar-EG" : "en-US")}</td>
-                <td className="p-3 text-danger">{p.totalExpenses.toLocaleString(locale === "ar" ? "ar-EG" : "en-US")}</td>
-                <td className={`p-3 font-medium ${p.netProfit >= 0 ? "text-success" : "text-danger"}`}>{p.netProfit.toLocaleString(locale === "ar" ? "ar-EG" : "en-US")}</td>
-                <td className="p-3">{p.totalCollected.toLocaleString(locale === "ar" ? "ar-EG" : "en-US")}</td>
-                <td className="p-3 font-medium">{p.totalClientPaid.toLocaleString(locale === "ar" ? "ar-EG" : "en-US")}</td>
+                <td className="p-3">{Number(p.contractValue).toLocaleString(locale === "ar" ? "ar-EG-u-nu-latn" : "en-US")}</td>
+                <td className="p-3 text-danger">{p.totalExpenses.toLocaleString(locale === "ar" ? "ar-EG-u-nu-latn" : "en-US")}</td>
+                <td className={`p-3 font-medium ${p.netProfit >= 0 ? "text-success" : "text-danger"}`}>{p.netProfit.toLocaleString(locale === "ar" ? "ar-EG-u-nu-latn" : "en-US")}</td>
+                <td className="p-3">{p.totalCollected.toLocaleString(locale === "ar" ? "ar-EG-u-nu-latn" : "en-US")}</td>
+                <td className="p-3 font-medium">{p.totalClientPaid.toLocaleString(locale === "ar" ? "ar-EG-u-nu-latn" : "en-US")}</td>
                 <td className="p-3">
                   <span className={`text-xs px-2.5 py-1 rounded-full font-medium flex items-center gap-1 w-fit ${p.cashFlow >= 0 ? "bg-success/10 text-success" : "bg-danger/10 text-danger"}`}>
                     {p.cashFlow >= 0 ? <CashUp size={12} /> : <CashDown size={12} />}
-                    {p.cashFlow.toLocaleString(locale === "ar" ? "ar-EG" : "en-US")}
+                    {p.cashFlow.toLocaleString(locale === "ar" ? "ar-EG-u-nu-latn" : "en-US")}
                   </span>
                 </td>
                 <td className="p-3"><StatusBadge status={p.status} /></td>
@@ -357,12 +357,12 @@ export default function ProjectsPage() {
             <tfoot>
               <tr className="border-t bg-neutral-50 font-semibold">
                 <td className="p-3" colSpan={3}>{t.total}</td>
-                <td className="p-3">{rows.reduce((s, p) => s + Number(p.contractValue), 0).toLocaleString(locale === "ar" ? "ar-EG" : "en-US")}</td>
-                <td className="p-3 text-danger">{rows.reduce((s, p) => s + p.totalExpenses, 0).toLocaleString(locale === "ar" ? "ar-EG" : "en-US")}</td>
-                <td className="p-3 text-success">{rows.reduce((s, p) => s + p.netProfit, 0).toLocaleString(locale === "ar" ? "ar-EG" : "en-US")}</td>
-                <td className="p-3">{rows.reduce((s, p) => s + p.totalCollected, 0).toLocaleString(locale === "ar" ? "ar-EG" : "en-US")}</td>
-                <td className="p-3">{rows.reduce((s, p) => s + p.totalClientPaid, 0).toLocaleString(locale === "ar" ? "ar-EG" : "en-US")}</td>
-                <td className="p-3">{rows.reduce((s, p) => s + p.cashFlow, 0).toLocaleString(locale === "ar" ? "ar-EG" : "en-US")}</td>
+                <td className="p-3">{rows.reduce((s, p) => s + Number(p.contractValue), 0).toLocaleString(locale === "ar" ? "ar-EG-u-nu-latn" : "en-US")}</td>
+                <td className="p-3 text-danger">{rows.reduce((s, p) => s + p.totalExpenses, 0).toLocaleString(locale === "ar" ? "ar-EG-u-nu-latn" : "en-US")}</td>
+                <td className="p-3 text-success">{rows.reduce((s, p) => s + p.netProfit, 0).toLocaleString(locale === "ar" ? "ar-EG-u-nu-latn" : "en-US")}</td>
+                <td className="p-3">{rows.reduce((s, p) => s + p.totalCollected, 0).toLocaleString(locale === "ar" ? "ar-EG-u-nu-latn" : "en-US")}</td>
+                <td className="p-3">{rows.reduce((s, p) => s + p.totalClientPaid, 0).toLocaleString(locale === "ar" ? "ar-EG-u-nu-latn" : "en-US")}</td>
+                <td className="p-3">{rows.reduce((s, p) => s + p.cashFlow, 0).toLocaleString(locale === "ar" ? "ar-EG-u-nu-latn" : "en-US")}</td>
                 <td className="p-3" colSpan={2}></td>
               </tr>
             </tfoot>

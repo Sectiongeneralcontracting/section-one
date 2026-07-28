@@ -53,7 +53,7 @@ export default function SubcontractorContractPage() {
   const { id } = useParams<{ id: string }>();
   const locale = useLocale();
   const t = dict[locale];
-  const localeCode = locale === "ar" ? "ar-EG" : "en-US";
+  const localeCode = locale === "ar" ? "ar-EG-u-nu-latn" : "en-US";
   const currency = locale === "ar" ? "ج.م" : "EGP";
 
   const [contract, setContract] = useState<any>(null);

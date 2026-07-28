@@ -73,7 +73,7 @@ export default function SiteReportDetailPage() {
   const { id } = useParams<{ id: string }>();
   const locale = useLocale();
   const t = dict[locale];
-  const localeCode = locale === "ar" ? "ar-EG" : "en-US";
+  const localeCode = locale === "ar" ? "ar-EG-u-nu-latn" : "en-US";
 
   const [report, setReport] = useState<any>(null);
   const [equipmentList, setEquipmentList] = useState<any[]>([]);

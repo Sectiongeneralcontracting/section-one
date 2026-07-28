@@ -205,7 +205,7 @@ export default function ContractDetailPage() {
   if (!contract) return <AppShell title={t.loading}><></></AppShell>;
 
   const boqTotal = contract.boqItems.reduce((s: number, i: any) => s + Number(i.quantity) * Number(i.unitPrice), 0);
-  const localeCode = locale === "ar" ? "ar-EG" : "en-US";
+  const localeCode = locale === "ar" ? "ar-EG-u-nu-latn" : "en-US";
   const currency = locale === "ar" ? "ج.م" : "EGP";
 
   return (

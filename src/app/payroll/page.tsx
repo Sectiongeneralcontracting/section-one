@@ -106,7 +106,7 @@ export default function PayrollPage() {
   }
 
   const totalNet = records.reduce((s, r) => s + Number(r.netSalary), 0);
-  const localeCode = locale === "ar" ? "ar-EG" : "en-US";
+  const localeCode = locale === "ar" ? "ar-EG-u-nu-latn" : "en-US";
   const currency = locale === "ar" ? "ج.م" : "EGP";
 
   return (

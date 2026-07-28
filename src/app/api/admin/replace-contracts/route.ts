@@ -96,7 +96,7 @@ export async function POST() {
 
       results.push({
         project: seed.projectName,
-        status: `تم الاستبدال — ${seed.boq.length} بند، القيمة الجديدة ${seed.contractValue.toLocaleString("ar-EG")} ج.م${
+        status: `تم الاستبدال — ${seed.boq.length} بند، القيمة الجديدة ${seed.contractValue.toLocaleString("ar-EG-u-nu-latn")} ج.م${
           existingProject.contract && existingProject.contract.certificates.length > 0
             ? ` ⚠️ تحذير: العقد ده عليه ${existingProject.contract.certificates.length} مستخلص مسجل من قبل — راجعها يدويًا لأن قيمة العقد اتغيرت`
             : ""
@@ -149,7 +149,7 @@ export async function POST() {
 
     results.push({
       project: seed.projectName,
-      status: `تم الإنشاء (مشروع جديد) — ${seed.boq.length} بند، القيمة ${seed.contractValue.toLocaleString("ar-EG")} ج.م`,
+      status: `تم الإنشاء (مشروع جديد) — ${seed.boq.length} بند، القيمة ${seed.contractValue.toLocaleString("ar-EG-u-nu-latn")} ج.م`,
     });
   }
 

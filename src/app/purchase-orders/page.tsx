@@ -86,7 +86,7 @@ export default function PurchaseOrdersPage() {
   }
 
   const total = items.reduce((s, i) => s + Number(i.quantity) * Number(i.unitPrice), 0);
-  const localeCode = locale === "ar" ? "ar-EG" : "en-US";
+  const localeCode = locale === "ar" ? "ar-EG-u-nu-latn" : "en-US";
   const currency = locale === "ar" ? "ج.م" : "EGP";
 
   async function handleSubmit(e: React.FormEvent) {

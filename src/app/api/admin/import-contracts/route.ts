@@ -76,7 +76,7 @@ export async function POST() {
 
     results.push({
       project: seed.projectName,
-      status: `تم الاستيراد — ${seed.boq.length} بند، إجمالي البنود ${boqTotal.toLocaleString("ar-EG")} ج.م`,
+      status: `تم الاستيراد — ${seed.boq.length} بند، إجمالي البنود ${boqTotal.toLocaleString("ar-EG-u-nu-latn")} ج.م`,
     });
   }
 

@@ -210,7 +210,7 @@ export default function PartnersPage() {
                 <td className="p-3">{p.phone || "—"}</td>
                 <td className="p-3">{Number(p.defaultShare)}%</td>
                 <td className="p-3">
-                  {p.contributions.reduce((s, c) => s + Number(c.amount), 0).toLocaleString(locale === "ar" ? "ar-EG" : "en-US")} {locale === "ar" ? "ج.م" : "EGP"}
+                  {p.contributions.reduce((s, c) => s + Number(c.amount), 0).toLocaleString(locale === "ar" ? "ar-EG-u-nu-latn" : "en-US")} {locale === "ar" ? "ج.م" : "EGP"}
                 </td>
                 <td className="p-3 flex gap-2">
                   <button onClick={() => startEdit(p)} className="text-primary hover:opacity-70"><Pencil size={15} /></button>
