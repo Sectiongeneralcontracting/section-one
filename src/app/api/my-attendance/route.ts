@@ -49,10 +49,16 @@ export async function POST(req: Request) {
   });
 
   if (action === "checkin") {
-    if (existing) return NextResponse.json({ error: "إنت مسجّل حضور بالفعل النهاردة" }, { status: 400 });
-    const record = await prisma.attendanceRecord.create({
-      data: { employeeId: employee.id, date: today, status: "PRESENT", checkIn: new Date(), approvalStatus: "PENDING" },
-    });
+    if (existing) return NextResponse.json({ error: "تم تسجيل الحضور بالفعل النهاردة" }, { status: 400 });
+    let record;
+    try {
+      record = await prisma.attendanceRecord.create({
+        data: { employeeId: employee.id, date: today, status: "PRESENT", checkIn: new Date(), approvalStatus: "PENDING" },
+      });
+    } catch {
+      // لو طلبين وصلوا في نفس اللحظة بالظبط، القيد الفريد في قاعدة البيانات بيرفض الثاني — نرجّع نفس رسالة "مسجّل بالفعل"
+      return NextResponse.json({ error: "تم تسجيل الحضور بالفعل النهاردة" }, { status: 400 });
+    }
     await logAudit({ userId: (session.user as any).id, action: "ATTENDANCE_CHECKIN", entityType: "AttendanceRecord", entityId: record.id, after: record });
     await notifyRoles(["FINANCE_MANAGER", "ADMIN"], "ATTENDANCE_PENDING_APPROVAL", `${employee.name} سجّل حضور النهاردة — محتاج اعتماد`);
     return NextResponse.json(record, { status: 201 });
@@ -60,7 +66,7 @@ export async function POST(req: Request) {
 
   if (action === "checkout") {
     if (!existing || !existing.checkIn) return NextResponse.json({ error: "لازم تسجّل حضور الأول" }, { status: 400 });
-    if (existing.checkOut) return NextResponse.json({ error: "إنت مسجّل انصراف بالفعل النهاردة" }, { status: 400 });
+    if (existing.checkOut) return NextResponse.json({ error: "تم تسجيل الانصراف بالفعل النهاردة" }, { status: 400 });
     const record = await prisma.attendanceRecord.update({
       where: { id: existing.id },
       data: { checkOut: new Date(), approvalStatus: "PENDING" },

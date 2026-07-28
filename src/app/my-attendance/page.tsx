@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { AppShell } from "@/components/layout/app-shell";
 import { useLocale } from "@/lib/use-locale";
 import { LogIn, LogOut } from "lucide-react";
@@ -22,6 +22,7 @@ const dict = {
     todayStatus: "حالة اليوم", notCheckedIn: "لسه ما سجّلتش حضور النهاردة",
     checkedInAt: "حضرت الساعة", checkedOutAt: "انصرفت الساعة", saving: "جارٍ التسجيل...",
     errAction: "تعذر تنفيذ الإجراء", notLinked: "حسابك مش مربوط بسجل موظف — كلّم الأدمن لربطه.",
+    alreadyCheckedIn: "تم تسجيل الحضور بالفعل", alreadyCheckedOut: "تم تسجيل الانصراف بالفعل",
     history: "سجل الأيام", thDate: "التاريخ", thCheckIn: "الحضور", thCheckOut: "الانصراف",
     thApproval: "الاعتماد", loading: "جارٍ التحميل...", empty: "لا يوجد سجلات بعد.",
     month: "الشهر",
@@ -31,6 +32,7 @@ const dict = {
     todayStatus: "Today's Status", notCheckedIn: "You haven't checked in today yet",
     checkedInAt: "Checked in at", checkedOutAt: "Checked out at", saving: "Recording...",
     errAction: "Action failed", notLinked: "Your account isn't linked to an employee record — ask the admin to link it.",
+    alreadyCheckedIn: "Already checked in", alreadyCheckedOut: "Already checked out",
     history: "Days Log", thDate: "Date", thCheckIn: "Check In", thCheckOut: "Check Out",
     thApproval: "Approval", loading: "Loading...", empty: "No records yet.",
     month: "Month",
@@ -53,6 +55,7 @@ export default function MyAttendancePage() {
   const [acting, setActing] = useState(false);
   const [error, setError] = useState("");
   const [notLinked, setNotLinked] = useState(false);
+  const actingRef = useRef(false); // حماية متزامنة ضد الضغط المزدوج السريع (قبل ما الـ state يتحدّث)
 
   async function load() {
     setLoading(true);
@@ -68,6 +71,18 @@ export default function MyAttendancePage() {
   useEffect(() => { load(); }, [month]);
 
   async function act(action: "checkin" | "checkout") {
+    // لو فيه طلب شغال بالفعل، أو المستخدم مسجّل الحالة دي بالفعل — امنع الإرسال من الأساس
+    if (actingRef.current) return;
+    if (action === "checkin" && data?.today) {
+      setError(t.alreadyCheckedIn);
+      return;
+    }
+    if (action === "checkout" && data?.today?.checkOut) {
+      setError(t.alreadyCheckedOut);
+      return;
+    }
+
+    actingRef.current = true;
     setActing(true);
     setError("");
     const res = await fetch("/api/my-attendance", {
@@ -75,8 +90,18 @@ export default function MyAttendancePage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ action }),
     });
+    actingRef.current = false;
     setActing(false);
-    if (!res.ok) return setError((await res.json()).error ?? t.errAction);
+
+    if (!res.ok) {
+      const err = await res.json();
+      setError(err.error ?? t.errAction);
+      return;
+    }
+
+    const record = await res.json();
+    // تحديث فوري للواجهة (Optimistic) قبل ما ننادي load() عشان الزرار يختفي على طول ومتفضلش نافذة يقدر فيها يضغط تاني
+    setData((prev: any) => ({ ...prev, today: record }));
     load();
   }
 
