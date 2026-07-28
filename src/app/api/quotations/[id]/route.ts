@@ -30,8 +30,6 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   const body = await req.json();
   const before = await prisma.quotation.findUnique({ where: { id: params.id } });
   if (!before) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  if (before.status === "CONVERTED")
-    return NextResponse.json({ error: "عرض السعر ده اتحول لعقد بالفعل — مينفعش يتعدّل" }, { status: 400 });
 
   // تحديث الحالة (إرسال / قبول / رفض)
   if (body.action) {
@@ -76,8 +74,6 @@ export async function DELETE(_req: Request, { params }: { params: { id: string }
 
   const before = await prisma.quotation.findUnique({ where: { id: params.id } });
   if (!before) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  if (before.status === "CONVERTED")
-    return NextResponse.json({ error: "عرض السعر ده اتحول لعقد بالفعل — مينفعش يتحذف" }, { status: 400 });
 
   await prisma.$transaction([
     prisma.quotationItem.deleteMany({ where: { quotationId: params.id } }),

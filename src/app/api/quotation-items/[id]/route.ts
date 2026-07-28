@@ -14,8 +14,6 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   const body = await req.json();
   const before = await prisma.quotationItem.findUnique({ where: { id: params.id }, include: { quotation: true } });
   if (!before) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  if (before.quotation.status === "CONVERTED")
-    return NextResponse.json({ error: "عرض السعر ده اتحول لعقد بالفعل" }, { status: 400 });
 
   const item = await prisma.quotationItem.update({
     where: { id: params.id },
@@ -41,8 +39,6 @@ export async function DELETE(_req: Request, { params }: { params: { id: string }
 
   const before = await prisma.quotationItem.findUnique({ where: { id: params.id }, include: { quotation: true } });
   if (!before) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  if (before.quotation.status === "CONVERTED")
-    return NextResponse.json({ error: "عرض السعر ده اتحول لعقد بالفعل" }, { status: 400 });
 
   await prisma.quotationItem.delete({ where: { id: params.id } });
   await logAudit({ userId: (session.user as any).id, action: "QUOTATION_ITEM_DELETED", entityType: "QuotationItem", entityId: params.id, before });

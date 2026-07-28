@@ -161,9 +161,7 @@ export default function QuotationsPage() {
                   <td className="p-3">{q.convertedProject?.id ? <Link href={`/projects/${q.convertedProject.id}`} className="text-primary hover:underline text-xs">{q.convertedProject.name}</Link> : "—"}</td>
                   <td className="p-3 flex gap-2">
                     <Link href={`/quotations/${q.id}`} className="text-primary hover:opacity-70"><Pencil size={14} /></Link>
-                    {q.status !== "CONVERTED" && (
-                      <button onClick={() => removeQuotation(q.id)} className="text-danger hover:opacity-70"><Trash2 size={14} /></button>
-                    )}
+                    <button onClick={() => removeQuotation(q.id)} className="text-danger hover:opacity-70"><Trash2 size={14} /></button>
                   </td>
                 </tr>
               );

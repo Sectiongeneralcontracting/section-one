@@ -26,8 +26,6 @@ export async function POST(req: Request, { params }: { params: { id: string } })
 
   const quotation = await prisma.quotation.findUnique({ where: { id: params.id } });
   if (!quotation) return NextResponse.json({ error: "عرض السعر غير موجود" }, { status: 404 });
-  if (quotation.status === "CONVERTED")
-    return NextResponse.json({ error: "عرض السعر ده اتحول لعقد بالفعل" }, { status: 400 });
 
   const item = await prisma.quotationItem.create({ data: { ...parsed.data, quotationId: params.id } });
 

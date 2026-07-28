@@ -159,11 +159,9 @@ export default function QuotationDetailPage() {
       action={
         <div className="flex gap-2">
           <span className={`text-xs px-3 py-2 rounded-xl font-medium ${statusStyles[quotation.status]}`}>{statusLabels[quotation.status]?.[locale] ?? quotation.status}</span>
-          {quotation.status !== "CONVERTED" && (
-            <button onClick={removeQuotation} className="border border-danger text-danger text-sm px-4 py-2 rounded-xl flex items-center gap-1.5">
-              <Trash2 size={15} /> {t.deleteQuotation}
-            </button>
-          )}
+          <button onClick={removeQuotation} className="border border-danger text-danger text-sm px-4 py-2 rounded-xl flex items-center gap-1.5">
+            <Trash2 size={15} /> {t.deleteQuotation}
+          </button>
         </div>
       }
     >
@@ -191,11 +189,9 @@ export default function QuotationDetailPage() {
       {/* بنود عرض السعر */}
       <div className="flex items-center justify-between">
         <h2 className="font-semibold">{t.itemsTitle}</h2>
-        {quotation.status !== "CONVERTED" && (
-          <button onClick={() => setShowItemForm((v) => !v)} className="bg-primary text-white text-sm px-3 py-1.5 rounded-xl flex items-center gap-1.5">
-            {showItemForm ? <X size={14} /> : <Plus size={14} />} {t.newItem}
-          </button>
-        )}
+        <button onClick={() => setShowItemForm((v) => !v)} className="bg-primary text-white text-sm px-3 py-1.5 rounded-xl flex items-center gap-1.5">
+          {showItemForm ? <X size={14} /> : <Plus size={14} />} {t.newItem}
+        </button>
       </div>
       {showItemForm && (
         <form onSubmit={addItem} className="card grid grid-cols-1 sm:grid-cols-5 gap-4">
@@ -242,12 +238,8 @@ export default function QuotationDetailPage() {
                   <td className="p-3">{Number(i.unitPrice).toLocaleString(localeCode)}</td>
                   <td className="p-3">{(Number(i.quantity) * Number(i.unitPrice)).toLocaleString(localeCode)}</td>
                   <td className="p-3 flex gap-2">
-                    {quotation.status !== "CONVERTED" && (
-                      <>
-                        <button onClick={() => startEditItem(i)} className="text-primary hover:opacity-70"><Pencil size={14} /></button>
-                        <button onClick={() => deleteItem(i.id)} className="text-danger hover:opacity-70"><Trash2 size={14} /></button>
-                      </>
-                    )}
+                    <button onClick={() => startEditItem(i)} className="text-primary hover:opacity-70"><Pencil size={14} /></button>
+                    <button onClick={() => deleteItem(i.id)} className="text-danger hover:opacity-70"><Trash2 size={14} /></button>
                   </td>
                 </tr>
               )
