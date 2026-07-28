@@ -17,9 +17,11 @@ export function AppShell({
 }) {
   return (
     <div className="flex">
-      <Sidebar />
-      <main className="flex-1 p-6 space-y-5 min-h-screen">
-        <div className="flex items-center justify-between">
+      <div className="print:hidden">
+        <Sidebar />
+      </div>
+      <main className="flex-1 p-6 space-y-5 min-h-screen print:p-0 print:space-y-0">
+        <div className="flex items-center justify-between print:hidden">
           {!hideTitle ? (
             <h1 className="text-2xl font-bold text-neutral-900">{title}</h1>
           ) : (

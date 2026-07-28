@@ -5,7 +5,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { AppShell } from "@/components/layout/app-shell";
 import { useLocale } from "@/lib/use-locale";
-import { Plus, X, Pencil, Trash2, ArrowRightCircle } from "lucide-react";
+import { Plus, X, Pencil, Trash2, ArrowRightCircle, Printer, FileDown } from "lucide-react";
 
 const statusLabels: Record<string, { ar: string; en: string }> = {
   DRAFT: { ar: "مسودة", en: "Draft" },
@@ -37,6 +37,10 @@ const dict = {
     convertedNote: "تم تحويل عرض السعر ده لمشروع فعلي:", saveEdit: "حفظ", cancelEdit: "إلغاء",
     confirmDeleteItem: "تأكيد حذف البند؟", errDelete: "تعذر الحذف",
     deleteQuotation: "حذف عرض السعر", confirmDeleteQuotation: "تأكيد حذف عرض السعر بالكامل؟",
+    print: "طباعة", exportWord: "تصدير Word", noVat: "الأسعار لا تشمل ضريبة القيمة المضافة.",
+    validUntilPrint: "العرض ساري حتى", hopeApproval: "نأمل أن ينال عرضنا رضاكم", regards: "وتفضلوا بقبول فائق الاحترام والتقدير،،،",
+    dearSir: "المحترمين،،،", greeting: "تحية طيبة وبعد،", introText: "يسرّنا أن نتقدّم لسيادتكم بعرض السعر الخاص بـ",
+    asDetailedBelow: "كما هو موضّح بالتفصيل أدناه:", offerNumber: "رقم العرض",
   },
   en: {
     loading: "Loading...", client: "Client", projectName: "Proposed Project", date: "Date", validUntil: "Valid Until",
@@ -52,6 +56,10 @@ const dict = {
     convertedNote: "This quotation was converted to a real project:", saveEdit: "Save", cancelEdit: "Cancel",
     confirmDeleteItem: "Confirm item deletion?", errDelete: "Failed to delete",
     deleteQuotation: "Delete Quotation", confirmDeleteQuotation: "Confirm permanently deleting this quotation?",
+    print: "Print", exportWord: "Export Word", noVat: "Prices do not include VAT.",
+    validUntilPrint: "Valid until", hopeApproval: "We hope our offer meets your approval", regards: "Best regards,",
+    dearSir: "Dear Sir/Madam,", greeting: "Greetings,", introText: "We are pleased to submit our quotation for",
+    asDetailedBelow: "as detailed below:", offerNumber: "Quotation No.",
   },
 };
 
@@ -63,6 +71,7 @@ export default function QuotationDetailPage() {
   const currency = locale === "ar" ? "ج.م" : "EGP";
 
   const [quotation, setQuotation] = useState<any>(null);
+  const [company, setCompany] = useState<any>(null);
   const [showItemForm, setShowItemForm] = useState(false);
   const [itemForm, setItemForm] = useState({ code: "", description: "", unit: "", quantity: 0, unitPrice: 0 });
   const [itemError, setItemError] = useState("");
@@ -78,6 +87,8 @@ export default function QuotationDetailPage() {
   async function load() {
     const res = await fetch(`/api/quotations/${id}`);
     if (res.ok) setQuotation(await res.json());
+    const cRes = await fetch("/api/company-profile");
+    if (cRes.ok) setCompany(await cRes.json());
   }
   useEffect(() => { load(); }, [id]);
 
@@ -159,12 +170,19 @@ export default function QuotationDetailPage() {
       action={
         <div className="flex gap-2">
           <span className={`text-xs px-3 py-2 rounded-xl font-medium ${statusStyles[quotation.status]}`}>{statusLabels[quotation.status]?.[locale] ?? quotation.status}</span>
+          <button onClick={() => window.print()} className="border text-sm px-4 py-2 rounded-xl flex items-center gap-1.5">
+            <Printer size={15} /> {t.print}
+          </button>
+          <a href={`/api/quotations/${id}/export-docx`} className="border text-sm px-4 py-2 rounded-xl flex items-center gap-1.5">
+            <FileDown size={15} /> {t.exportWord}
+          </a>
           <button onClick={removeQuotation} className="border border-danger text-danger text-sm px-4 py-2 rounded-xl flex items-center gap-1.5">
             <Trash2 size={15} /> {t.deleteQuotation}
           </button>
         </div>
       }
     >
+      <div className="print:hidden space-y-5">
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="card"><p className="text-sm text-neutral-500">{t.client}</p><p className="font-bold">{quotation.client?.name ?? "—"}</p></div>
         <div className="card"><p className="text-sm text-neutral-500">{t.date}</p><p className="font-bold">{new Date(quotation.date).toLocaleDateString(localeCode)}</p></div>
@@ -299,6 +317,67 @@ export default function QuotationDetailPage() {
           )}
         </div>
       )}
+      </div>
+
+      {/* قسم مخصص للطباعة فقط — بنفس شكل ملف Word المُصدَّر */}
+      <div className="hidden print:block" dir="rtl">
+        <div className="flex items-start justify-between mb-8">
+          <div className="text-right">
+            <p className="text-xl font-bold" style={{ color: "#C9692E" }}>{company?.name ?? "Section General Contracting"}</p>
+            {company?.address && <p className="text-xs text-neutral-500">{company.address}</p>}
+            <p className="text-xs text-neutral-500">{[company?.phone, company?.email].filter(Boolean).join("  |  ")}</p>
+          </div>
+          {company?.logoUrl && <img src={company.logoUrl} alt="" className="h-20 w-20 object-contain" />}
+        </div>
+
+        <h1 className="text-center text-2xl font-bold mb-1">{locale === "ar" ? "عرض سعر" : "Quotation"}</h1>
+        <p className="text-center text-sm font-semibold">{t.offerNumber}: {quotation.quotationNumber}</p>
+        <p className="text-center text-sm text-neutral-500 mb-6">{new Date(quotation.date).toLocaleDateString(localeCode, { year: "numeric", month: "long", day: "numeric" })}</p>
+
+        <p className="font-bold mb-1">{locale === "ar" ? "السادة/" : "Dear"} {quotation.client?.name ?? "—"} {t.dearSir}</p>
+        <p className="mb-1">{t.greeting}</p>
+        <p className="mb-4">{t.introText} "{quotation.projectName}" {t.asDetailedBelow}</p>
+
+        <table className="w-full border-collapse text-sm mb-4">
+          <thead>
+            <tr style={{ backgroundColor: "#2C2E30", color: "#fff" }}>
+              <th className="p-2 border text-center">م</th>
+              <th className="p-2 border text-right">{t.thDesc}</th>
+              <th className="p-2 border text-center">{t.thUnit}</th>
+              <th className="p-2 border text-center">{t.thQty}</th>
+              <th className="p-2 border text-center">{t.thPrice}</th>
+              <th className="p-2 border text-center">{t.thTotal}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {(quotation.items ?? []).map((i: any, idx: number) => (
+              <tr key={i.id}>
+                <td className="p-2 border text-center">{idx + 1}</td>
+                <td className="p-2 border text-right">{i.description}</td>
+                <td className="p-2 border text-center">{i.unit}</td>
+                <td className="p-2 border text-center">{Number(i.quantity).toLocaleString(localeCode)}</td>
+                <td className="p-2 border text-center">{Number(i.unitPrice).toLocaleString(localeCode)}</td>
+                <td className="p-2 border text-center">{(Number(i.quantity) * Number(i.unitPrice)).toLocaleString(localeCode)}</td>
+              </tr>
+            ))}
+          </tbody>
+          <tfoot>
+            <tr style={{ backgroundColor: "#F3F3F3" }}>
+              <td className="p-2 border font-bold text-right" colSpan={5}>{t.total}</td>
+              <td className="p-2 border font-bold text-center" style={{ color: "#2E7D32" }}>{total.toLocaleString(localeCode)} {currency}</td>
+            </tr>
+          </tfoot>
+        </table>
+
+        <p className="text-xs italic mb-1" style={{ color: "#990000" }}>{t.noVat}</p>
+        {quotation.validUntil && (
+          <p className="text-xs italic text-neutral-500 mb-1">{t.validUntilPrint} {new Date(quotation.validUntil).toLocaleDateString(localeCode)}.</p>
+        )}
+        {quotation.notes && <p className="text-xs text-neutral-500 mb-4">{quotation.notes}</p>}
+
+        <p className="text-center font-bold text-lg mt-10 mb-1">{t.hopeApproval}</p>
+        <p className="text-center text-sm">{t.regards}</p>
+      </div>
     </AppShell>
   );
 }
