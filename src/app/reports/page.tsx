@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { AppShell } from "@/components/layout/app-shell";
 import { useLocale } from "@/lib/use-locale";
 import { Printer } from "lucide-react";
+import { ClientProjectsChart } from "@/components/dashboard-charts";
+import { StatusBadge } from "@/components/ui/status-badge";
 
 type Tab = "clients" | "projects" | "partners" | "management" | "executive";
 
@@ -22,6 +24,10 @@ const dict = {
     client: "العميل", contractsValue: "قيمة العقود", project: "المشروع", netProfit: "صافي الربح",
     partner: "الشريك", totalContributions: "إجمالي المساهمات",
     clientsReportTitle: "تقرير العملاء", projectsCount: "عدد المشاريع",
+    selectClientLabel: "اختر عميل لعرض تفاصيل مشاريعه", allClientsOption: "كل العملاء (ملخص عام)",
+    clientDetailTitle: "تفاصيل مشاريع العميل", thProjectStatus: "حالة المشروع", thValue: "القيمة",
+    thPaidByClient: "المدفوع من العميل", thRemaining: "المتبقي", totalContractValue: "إجمالي قيمة المشاريع",
+    totalPaid: "إجمالي المدفوع", totalRemaining: "إجمالي المتبقي",
     projectsReportTitle: "تقرير المشروعات — الربح والخسارة", value: "قيمة العقد", expenses: "المصروفات",
     filterByClientName: "فلترة باسم العميل", filterByClientNamePh: "اكتب اسم العميل...", allClients: "كل العملاء",
     choosePartner: "اختر شريك لعرض تفاصيل أرباحه لكل مشروع", allPartners: "كل الشركاء (ملخص عام)",
@@ -46,6 +52,10 @@ const dict = {
     client: "Client", contractsValue: "Contract Value", project: "Project", netProfit: "Net Profit",
     partner: "Partner", totalContributions: "Total Contributions",
     clientsReportTitle: "Clients Report", projectsCount: "Projects Count",
+    selectClientLabel: "Choose a client to view project details", allClientsOption: "All Clients (summary)",
+    clientDetailTitle: "Client Projects Detail", thProjectStatus: "Project Status", thValue: "Value",
+    thPaidByClient: "Paid by Client", thRemaining: "Remaining", totalContractValue: "Total Project Value",
+    totalPaid: "Total Paid", totalRemaining: "Total Remaining",
     projectsReportTitle: "Projects Report — Profit & Loss", value: "Contract Value", expenses: "Expenses",
     filterByClientName: "Filter by client name", filterByClientNamePh: "Type client name...", allClients: "All clients",
     choosePartner: "Choose a partner to see their profit details per project", allPartners: "All Partners (summary)",
@@ -80,6 +90,21 @@ export default function ReportsPage() {
   const [partnerReport, setPartnerReport] = useState<any>(null);
   const [loadingPartnerReport, setLoadingPartnerReport] = useState(false);
   const [projectsClientFilter, setProjectsClientFilter] = useState("");
+  const [selectedClientId, setSelectedClientId] = useState("");
+  const [clientDetail, setClientDetail] = useState<any>(null);
+  const [loadingClientDetail, setLoadingClientDetail] = useState(false);
+
+  useEffect(() => {
+    if (!selectedClientId) {
+      setClientDetail(null);
+      return;
+    }
+    setLoadingClientDetail(true);
+    fetch(`/api/clients/${selectedClientId}`)
+      .then((r) => r.json())
+      .then(setClientDetail)
+      .finally(() => setLoadingClientDetail(false));
+  }, [selectedClientId]);
 
   useEffect(() => {
     fetch("/api/company-profile").then((r) => r.json()).then(setCompany);
@@ -203,12 +228,93 @@ export default function ReportsPage() {
         )}
 
         {tab === "clients" && (
-          <ReportTable
-            title={t.clientsReportTitle}
-            headers={[t.client, t.projectsCount, t.contractsValue]}
-            rows={clients.map((c) => [c.name, String(c.projects.length), `${c.projects.reduce((s: number, p: any) => s + Number(p.contractValue), 0).toLocaleString(localeCode)} ${currency}`])}
-            noData={t.noData}
-          />
+          <div className="space-y-4">
+            <div className="print:hidden">
+              <label className="text-sm text-neutral-600 block mb-1">{t.selectClientLabel}</label>
+              <select
+                value={selectedClientId}
+                onChange={(e) => setSelectedClientId(e.target.value)}
+                className="border rounded-xl px-3 py-2 text-sm w-full sm:w-72"
+              >
+                <option value="">{t.allClientsOption}</option>
+                {clients.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+            </div>
+
+            {!selectedClientId && (
+              <ReportTable
+                title={t.clientsReportTitle}
+                headers={[t.client, t.projectsCount, t.contractsValue]}
+                rows={clients.map((c) => [c.name, String(c.projects.length), `${c.projects.reduce((s: number, p: any) => s + Number(p.contractValue), 0).toLocaleString(localeCode)} ${currency}`])}
+                noData={t.noData}
+              />
+            )}
+
+            {selectedClientId && loadingClientDetail && <p className="text-sm text-neutral-400">{t.loading}</p>}
+
+            {selectedClientId && !loadingClientDetail && clientDetail && (
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <ReportBlock title={t.totalContractValue} value={`${clientDetail.totals.totalContractValue.toLocaleString(localeCode)} ${currency}`} />
+                  <ReportBlock title={t.totalPaid} value={`${clientDetail.totals.totalClientPaid.toLocaleString(localeCode)} ${currency}`} />
+                  <ReportBlock
+                    title={t.totalRemaining}
+                    value={`${(clientDetail.totals.totalContractValue - clientDetail.totals.totalClientPaid).toLocaleString(localeCode)} ${currency}`}
+                  />
+                </div>
+
+                <p className="font-semibold">{t.clientDetailTitle}: {clientDetail.name}</p>
+                <table className="w-full text-sm border">
+                  <thead className="bg-neutral-50">
+                    <tr>
+                      <th className="p-2 text-right border-b">{t.project}</th>
+                      <th className="p-2 text-right border-b">{t.thProjectStatus}</th>
+                      <th className="p-2 text-right border-b">{t.thValue}</th>
+                      <th className="p-2 text-right border-b">{t.thPaidByClient}</th>
+                      <th className="p-2 text-right border-b">{t.thRemaining}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {clientDetail.projects.length === 0 && (
+                      <tr><td className="p-3 text-neutral-400" colSpan={5}>{t.noData}</td></tr>
+                    )}
+                    {clientDetail.projects.map((p: any) => (
+                      <tr key={p.id} className="border-b">
+                        <td className="p-2">{p.name}</td>
+                        <td className="p-2 print:hidden"><StatusBadge status={p.status} /></td>
+                        <td className="p-2">{p.contractValue.toLocaleString(localeCode)} {currency}</td>
+                        <td className="p-2 text-success">{p.totalClientPaid.toLocaleString(localeCode)} {currency}</td>
+                        <td className="p-2 text-danger">{(p.contractValue - p.totalClientPaid).toLocaleString(localeCode)} {currency}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  {clientDetail.projects.length > 0 && (
+                    <tfoot>
+                      <tr className="bg-neutral-50 font-semibold">
+                        <td className="p-2" colSpan={2}>{t.total}</td>
+                        <td className="p-2">{clientDetail.totals.totalContractValue.toLocaleString(localeCode)} {currency}</td>
+                        <td className="p-2 text-success">{clientDetail.totals.totalClientPaid.toLocaleString(localeCode)} {currency}</td>
+                        <td className="p-2 text-danger">{(clientDetail.totals.totalContractValue - clientDetail.totals.totalClientPaid).toLocaleString(localeCode)} {currency}</td>
+                      </tr>
+                    </tfoot>
+                  )}
+                </table>
+
+                {clientDetail.projects.length > 0 && (
+                  <div className="print:hidden">
+                    <ClientProjectsChart
+                      data={clientDetail.projects.map((p: any) => ({
+                        name: p.name,
+                        value: p.contractValue,
+                        paid: p.totalClientPaid,
+                        remaining: Math.max(p.contractValue - p.totalClientPaid, 0),
+                      }))}
+                    />
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         )}
 
         {tab === "projects" && (

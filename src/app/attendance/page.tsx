@@ -16,21 +16,36 @@ const statusStyles: Record<string, string> = {
   LEAVE: "bg-secondary/10 text-secondary",
   SICK: "bg-primary/10 text-primary",
 };
+const approvalLabels: Record<string, { ar: string; en: string }> = {
+  PENDING: { ar: "بانتظار اعتماد المدير المالي", en: "Pending Finance Approval" },
+  APPROVED: { ar: "معتمد", en: "Approved" },
+  REJECTED: { ar: "مرفوض", en: "Rejected" },
+};
+const approvalStyles: Record<string, string> = {
+  PENDING: "bg-secondary/10 text-secondary",
+  APPROVED: "bg-success/10 text-success",
+  REJECTED: "bg-danger/10 text-danger",
+};
 
 const dict = {
   ar: {
     title: "الحضور والانصراف", thEmployee: "الموظف", thDepartment: "القسم", thCurrentStatus: "الحالة الحالية",
-    thQuick: "تسجيل سريع", loading: "جارٍ التحميل...", empty: "لا يوجد موظفون نشطون.", notRecorded: "لم يُسجَّل",
+    thTimes: "الدخول / الخروج", thApproval: "اعتماد المدير المالي", thQuick: "تسجيل سريع (يدوي)",
+    loading: "جارٍ التحميل...", empty: "لا يوجد موظفون نشطون.", notRecorded: "لم يُسجَّل",
+    approve: "اعتماد", reject: "رفض",
   },
   en: {
     title: "Attendance", thEmployee: "Employee", thDepartment: "Department", thCurrentStatus: "Current Status",
-    thQuick: "Quick Entry", loading: "Loading...", empty: "No active employees.", notRecorded: "Not recorded",
+    thTimes: "Check In / Out", thApproval: "Finance Approval", thQuick: "Quick Entry (Manual)",
+    loading: "Loading...", empty: "No active employees.", notRecorded: "Not recorded",
+    approve: "Approve", reject: "Reject",
   },
 };
 
 export default function AttendancePage() {
   const locale = useLocale();
   const t = dict[locale];
+  const localeCode = locale === "ar" ? "ar-EG" : "en-US";
   const [employees, setEmployees] = useState<any[]>([]);
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [records, setRecords] = useState<any[]>([]);
@@ -67,6 +82,16 @@ export default function AttendancePage() {
     load();
   }
 
+  async function setApproval(recordId: string, approvalStatus: "APPROVED" | "REJECTED") {
+    const res = await fetch(`/api/attendance/${recordId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ approvalStatus }),
+    });
+    if (!res.ok) return alert((await res.json()).error);
+    load();
+  }
+
   return (
     <AppShell
       title={t.title}
@@ -81,13 +106,15 @@ export default function AttendancePage() {
               <th className="p-3 font-medium">{t.thEmployee}</th>
               <th className="p-3 font-medium">{t.thDepartment}</th>
               <th className="p-3 font-medium">{t.thCurrentStatus}</th>
+              <th className="p-3 font-medium">{t.thTimes}</th>
+              <th className="p-3 font-medium">{t.thApproval}</th>
               <th className="p-3 font-medium">{t.thQuick}</th>
             </tr>
           </thead>
           <tbody>
-            {loading && <tr><td className="p-4 text-neutral-400" colSpan={4}>{t.loading}</td></tr>}
+            {loading && <tr><td className="p-4 text-neutral-400" colSpan={6}>{t.loading}</td></tr>}
             {!loading && employees.filter((e) => e.isActive).length === 0 && (
-              <tr><td className="p-4 text-neutral-400" colSpan={4}>{t.empty}</td></tr>
+              <tr><td className="p-4 text-neutral-400" colSpan={6}>{t.empty}</td></tr>
             )}
             {employees.filter((e) => e.isActive).map((emp) => {
               const rec = recordFor(emp.id);
@@ -101,6 +128,26 @@ export default function AttendancePage() {
                     ) : (
                       <span className="text-xs text-neutral-400">{t.notRecorded}</span>
                     )}
+                  </td>
+                  <td className="p-3 text-xs text-neutral-500">
+                    {rec?.checkIn ? new Date(rec.checkIn).toLocaleTimeString(localeCode, { hour: "2-digit", minute: "2-digit" }) : "—"}
+                    {" / "}
+                    {rec?.checkOut ? new Date(rec.checkOut).toLocaleTimeString(localeCode, { hour: "2-digit", minute: "2-digit" }) : "—"}
+                  </td>
+                  <td className="p-3">
+                    {rec ? (
+                      <div className="flex items-center gap-2">
+                        <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${approvalStyles[rec.approvalStatus]}`}>
+                          {approvalLabels[rec.approvalStatus]?.[locale] ?? rec.approvalStatus}
+                        </span>
+                        {rec.approvalStatus === "PENDING" && (
+                          <>
+                            <button onClick={() => setApproval(rec.id, "APPROVED")} className="text-success text-xs">{t.approve}</button>
+                            <button onClick={() => setApproval(rec.id, "REJECTED")} className="text-danger text-xs">{t.reject}</button>
+                          </>
+                        )}
+                      </div>
+                    ) : "—"}
                   </td>
                   <td className="p-3 flex gap-2 flex-wrap">
                     {Object.entries(statusLabels).map(([key, label]) => (

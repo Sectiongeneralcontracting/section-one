@@ -19,6 +19,7 @@ export const MODULES: ModuleDef[] = [
   { key: "employees", label: "الموظفون", labelEn: "Employees", href: "/employees" },
   { key: "hr-extra", label: "شؤون الموظفين (عقود/سلف/جزاءات/إجازات)", labelEn: "HR (contracts/advances/penalties/leaves)", href: "/hr" },
   { key: "attendance", label: "الحضور والانصراف", labelEn: "Attendance", href: "/attendance" },
+  { key: "my-attendance", label: "حضوري وانصرافي", labelEn: "My Attendance", href: "/my-attendance" },
   { key: "head-office-expenses", label: "مصروفات المكتب الرئيسي", labelEn: "Head Office Expenses", href: "/hr/head-office-expenses" },
   { key: "payroll", label: "الرواتب", labelEn: "Payroll", href: "/payroll" },
   { key: "reports", label: "التقارير", labelEn: "Reports", href: "/reports" },
@@ -41,20 +42,20 @@ export const ALL_ROLES = Object.keys(ROLE_LABELS);
 // صلاحيات افتراضية منطقية لكل دور جديد — بتتحط أول مرة بس، وبعدين الأدمن يقدر يعدّلها من الإعدادات
 export const DEFAULT_PERMISSIONS: Record<string, { view: string[]; edit: string[] }> = {
   SITE_ENGINEER: {
-    view: ["dashboard", "projects", "contracts", "equipment", "inventory", "contractors", "attendance", "site-reports", "site-requests"],
-    edit: ["projects", "attendance", "site-reports", "site-requests"],
+    view: ["dashboard", "projects", "contracts", "equipment", "inventory", "contractors", "attendance", "site-reports", "site-requests", "my-attendance"],
+    edit: ["projects", "attendance", "site-reports", "site-requests", "my-attendance"],
   },
   ACCOUNTANT: {
-    view: ["dashboard", "projects", "clients", "suppliers", "purchase-orders", "payroll", "reports", "head-office-expenses"],
-    edit: ["purchase-orders", "payroll", "head-office-expenses"],
+    view: ["dashboard", "projects", "clients", "suppliers", "purchase-orders", "payroll", "reports", "head-office-expenses", "my-attendance"],
+    edit: ["purchase-orders", "payroll", "head-office-expenses", "my-attendance"],
   },
   FINANCE_MANAGER: {
-    view: ["dashboard", "projects", "clients", "partners", "contracts", "reports", "payroll", "head-office-expenses", "site-requests"],
-    edit: ["partners", "reports", "head-office-expenses", "site-requests"],
+    view: ["dashboard", "projects", "clients", "partners", "contracts", "reports", "payroll", "head-office-expenses", "site-requests", "attendance", "my-attendance"],
+    edit: ["partners", "reports", "head-office-expenses", "site-requests", "attendance", "my-attendance"],
   },
   HR_MANAGER: {
-    view: ["dashboard", "employees", "hr-extra", "attendance", "payroll"],
-    edit: ["employees", "hr-extra", "attendance", "payroll"],
+    view: ["dashboard", "employees", "hr-extra", "attendance", "payroll", "my-attendance"],
+    edit: ["employees", "hr-extra", "attendance", "payroll", "my-attendance"],
   },
   MANAGER: {
     view: MODULES.map((m) => m.key).filter((k) => k !== "settings"),

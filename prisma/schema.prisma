@@ -54,6 +54,7 @@ model User {
   auditLogs     AuditLog[]
   notifications Notification[]
   loginAttempts LoginAttempt[]
+  employee      Employee?
 
   @@map("users")
 }
@@ -866,6 +867,8 @@ model Employee {
   bankAccountNumber String?
   projectId   String?  // لو فاضي = مخصص للمكتب الرئيسي؛ ولو متحدد = محمّل على المشروع ده مباشرة
   project     Project? @relation(fields: [projectId], references: [id])
+  userId      String?  @unique // ربط بحساب المستخدم — يسمح له يسجل حضوره وانصرافه بنفسه
+  user        User?    @relation(fields: [userId], references: [id])
   isActive    Boolean  @default(true)
   notes       String?
   createdAt   DateTime @default(now())
@@ -988,6 +991,12 @@ enum AttendanceStatus {
   SICK
 }
 
+enum AttendanceApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 model AttendanceRecord {
   id         String           @id @default(cuid())
   employeeId String
@@ -997,6 +1006,9 @@ model AttendanceRecord {
   checkIn    DateTime?
   checkOut   DateTime?
   notes      String?
+  approvalStatus AttendanceApprovalStatus @default(PENDING) // اعتماد المدير المالي
+  approvedById   String?
+  approvedAt     DateTime?
   createdAt  DateTime         @default(now())
 
   @@unique([employeeId, date])
@@ -1034,6 +1046,7 @@ enum NotificationType {
   SITE_REQUEST_FINANCE_APPROVED
   SITE_REQUEST_APPROVED
   SITE_REQUEST_REJECTED
+  ATTENDANCE_PENDING_APPROVAL
 }
 
 model Notification {

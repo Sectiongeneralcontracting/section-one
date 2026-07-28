@@ -16,6 +16,7 @@ const dict = {
     active: "نشط", inactive: "معطّل", enable: "تفعيل", disable: "تعطيل",
     bankName: "اسم البنك", bankAccount: "رقم الحساب البنكي",
     assignment: "التخصيص", headOffice: "المكتب الرئيسي (يوزّع على المشاريع المفتوحة)", changeAssignment: "تغيير",
+    thUser: "حساب الدخول (للحضور الذاتي)", noUser: "غير مربوط", unlink: "إلغاء الربط",
   },
   en: {
     title: "Employees", newEmployee: "New Employee", cancel: "Cancel",
@@ -27,6 +28,7 @@ const dict = {
     active: "Active", inactive: "Inactive", enable: "Enable", disable: "Disable",
     bankName: "Bank Name", bankAccount: "Bank Account Number",
     assignment: "Assignment", headOffice: "Head Office (distributed across open projects)", changeAssignment: "Change",
+    thUser: "Login Account (for self check-in)", noUser: "Not linked", unlink: "Unlink",
   },
 };
 
@@ -41,12 +43,16 @@ export default function EmployeesPage() {
   const [error, setError] = useState("");
   const [form, setForm] = useState({ name: "", jobTitle: "", department: "", phone: "", hireDate: "", baseSalary: 0, bankName: "", bankAccountNumber: "", projectId: "" });
   const [editingAssignment, setEditingAssignment] = useState<string | null>(null);
+  const [editingUser, setEditingUser] = useState<string | null>(null);
+  const [users, setUsers] = useState<any[]>([]);
+  const [userLinkError, setUserLinkError] = useState("");
 
   async function load() {
     setLoading(true);
-    const [eRes, pRes] = await Promise.all([fetch("/api/employees"), fetch("/api/projects")]);
+    const [eRes, pRes, uRes] = await Promise.all([fetch("/api/employees"), fetch("/api/projects"), fetch("/api/users")]);
     if (eRes.ok) setEmployees(await eRes.json());
     if (pRes.ok) setProjects(await pRes.json());
+    if (uRes.ok) setUsers(await uRes.json());
     setLoading(false);
   }
 
@@ -86,6 +92,21 @@ export default function EmployeesPage() {
       body: JSON.stringify({ projectId: projectId || null }),
     });
     setEditingAssignment(null);
+    load();
+  }
+
+  async function updateUserLink(empId: string, userId: string) {
+    setUserLinkError("");
+    const res = await fetch(`/api/employees/${empId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId: userId || null }),
+    });
+    if (!res.ok) {
+      setUserLinkError((await res.json()).error ?? t.err);
+      return;
+    }
+    setEditingUser(null);
     load();
   }
 
@@ -146,13 +167,14 @@ export default function EmployeesPage() {
               <th className="p-3 font-medium">{t.thDepartment}</th>
               <th className="p-3 font-medium">{t.thSalary}</th>
               <th className="p-3 font-medium">{t.thAssignment}</th>
+              <th className="p-3 font-medium">{t.thUser}</th>
               <th className="p-3 font-medium">{t.thStatus}</th>
               <th className="p-3 font-medium"></th>
             </tr>
           </thead>
           <tbody>
-            {loading && <tr><td className="p-4 text-neutral-400" colSpan={7}>{t.loading}</td></tr>}
-            {!loading && employees.length === 0 && <tr><td className="p-4 text-neutral-400" colSpan={7}>{t.empty}</td></tr>}
+            {loading && <tr><td className="p-4 text-neutral-400" colSpan={8}>{t.loading}</td></tr>}
+            {!loading && employees.length === 0 && <tr><td className="p-4 text-neutral-400" colSpan={8}>{t.empty}</td></tr>}
             {employees.map((e) => (
               <tr key={e.id} className="border-t">
                 <td className="p-3 font-medium">{e.name}</td>
@@ -174,6 +196,27 @@ export default function EmployeesPage() {
                   ) : (
                     <button onClick={() => setEditingAssignment(e.id)} className="text-xs text-primary hover:underline text-right">
                       {e.project ? e.project.name : t.headOffice.split(" (")[0]}
+                    </button>
+                  )}
+                </td>
+                <td className="p-3">
+                  {editingUser === e.id ? (
+                    <div>
+                      <select
+                        autoFocus
+                        defaultValue={e.userId ?? ""}
+                        onChange={(ev) => updateUserLink(e.id, ev.target.value)}
+                        onBlur={() => setEditingUser(null)}
+                        className="border rounded-lg px-2 py-1 text-xs"
+                      >
+                        <option value="">{t.noUser}</option>
+                        {users.map((u: any) => <option key={u.id} value={u.id}>{u.name} ({u.email})</option>)}
+                      </select>
+                      {userLinkError && <p className="text-danger text-xs mt-1">{userLinkError}</p>}
+                    </div>
+                  ) : (
+                    <button onClick={() => setEditingUser(e.id)} className="text-xs text-primary hover:underline text-right">
+                      {e.user ? e.user.name : t.noUser}
                     </button>
                   )}
                 </td>

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Briefcase, Users, HandCoins, Settings, UserCog, FileBarChart, FileSignature, Truck, ShoppingCart, Warehouse, HardHat, IdCard, Wallet, CalendarCheck, ChevronDown, Users2, FileText, HandCoins as Coins2, ShieldAlert, Plane, Landmark, Clock3, MinusCircle, Banknote, Building2, ClipboardList } from "lucide-react";
+import { LayoutDashboard, Briefcase, Users, HandCoins, Settings, UserCog, FileBarChart, FileSignature, Truck, ShoppingCart, Warehouse, HardHat, IdCard, Wallet, CalendarCheck, ChevronDown, Users2, FileText, HandCoins as Coins2, ShieldAlert, Plane, Landmark, Clock3, MinusCircle, Banknote, Building2, ClipboardList, LogIn } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const items = [
@@ -30,6 +30,7 @@ const hrItems = [
   { href: "/employees", label: "الموظفين", labelEn: "Employees", icon: IdCard, module: "employees" },
   { href: "/hr/contracts", label: "العقود", labelEn: "Contracts", icon: FileText, module: "hr-extra" },
   { href: "/attendance", label: "الحضور", labelEn: "Attendance", icon: CalendarCheck, module: "attendance" },
+  { href: "/my-attendance", label: "حضوري وانصرافي", labelEn: "My Attendance", icon: LogIn, module: "my-attendance" },
   { href: "/employees", label: "المرتبات", labelEn: "Salaries", icon: Coins2, module: "employees" },
   { href: "/hr/advances", label: "السلف", labelEn: "Advances", icon: Landmark, module: "hr-extra" },
   { href: "/hr/penalties", label: "الجزاءات", labelEn: "Penalties", icon: ShieldAlert, module: "hr-extra" },

@@ -49,6 +49,24 @@ export function ExpensesByCategoryChart({ data }: { data: { name: string; value:
   );
 }
 
+export function ClientProjectsChart({ data }: { data: { name: string; value: number; paid: number; remaining: number }[] }) {
+  const locale = useLocale();
+  return (
+    <div className="card">
+      <p className="font-semibold mb-4">{locale === "ar" ? "قيمة المشاريع مقابل المدفوع والمتبقي" : "Project Value vs Paid vs Remaining"}</p>
+      <ResponsiveContainer width="100%" height={280}>
+        <BarChart data={data}>
+          <XAxis dataKey="name" tick={{ fontSize: 11 }} interval={0} angle={-15} textAnchor="end" height={60} />
+          <YAxis tick={{ fontSize: 12 }} />
+          <Tooltip formatter={(v: number) => v.toLocaleString(locale === "ar" ? "ar-EG" : "en-US")} />
+          <Bar dataKey="value" name={locale === "ar" ? "قيمة العقد" : "Contract Value"} fill="#565B60" radius={[4, 4, 0, 0]} />
+          <Bar dataKey="paid" name={locale === "ar" ? "المدفوع" : "Paid"} fill="#2E7D32" radius={[4, 4, 0, 0]} />
+          <Bar dataKey="remaining" name={locale === "ar" ? "المتبقي" : "Remaining"} fill="#C9692E" radius={[4, 4, 0, 0]} />
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
 export function PartnerDistributionBars({ data }: { data: { name: string; pct: number }[] }) {
   const locale = useLocale();
   return (
