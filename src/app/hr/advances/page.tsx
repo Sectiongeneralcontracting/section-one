@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { AppShell } from "@/components/layout/app-shell";
 import { useLocale } from "@/lib/use-locale";
-import { Plus, X } from "lucide-react";
+import { Plus, X, Pencil, Trash2 } from "lucide-react";
 
 const dict = {
   ar: {
@@ -13,6 +13,7 @@ const dict = {
     thEmployee: "الموظف", thAmount: "القيمة", thDate: "التاريخ", thReason: "السبب", thStatus: "الحالة",
     loading: "جارٍ التحميل...", empty: "لا يوجد سلف مسجلة بعد.", deducted: "اتخصمت", pending: "لسه معلّقة",
     note: "السلف اللي لسه معلّقة بتتخصم تلقائيًا من أول راتب يتولّد للموظف.",
+    confirmDelete: "تأكيد حذف السلفة؟", errDelete: "تعذر الحذف",
   },
   en: {
     title: "Employee Advances", newAdvance: "New Advance", cancel: "Cancel",
@@ -21,6 +22,7 @@ const dict = {
     thEmployee: "Employee", thAmount: "Amount", thDate: "Date", thReason: "Reason", thStatus: "Status",
     loading: "Loading...", empty: "No advances recorded yet.", deducted: "Deducted", pending: "Pending",
     note: "Pending advances are automatically deducted from the employee's next generated payroll.",
+    confirmDelete: "Confirm deleting this advance?", errDelete: "Failed to delete",
   },
 };
 
@@ -36,6 +38,8 @@ export default function AdvancesPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [form, setForm] = useState({ employeeId: "", amount: 0, date: "", reason: "" });
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState({ amount: 0, date: "", reason: "" });
 
   async function load() {
     setLoading(true);
@@ -60,6 +64,29 @@ export default function AdvancesPage() {
     if (!res.ok) return setError(t.err);
     setForm({ employeeId: "", amount: 0, date: "", reason: "" });
     setShowForm(false);
+    load();
+  }
+
+  function startEdit(a: any) {
+    setEditingId(a.id);
+    setEditForm({ amount: Number(a.amount), date: new Date(a.date).toISOString().slice(0, 10), reason: a.reason ?? "" });
+  }
+
+  async function saveEdited(advanceId: string) {
+    const res = await fetch(`/api/employee-advances/${advanceId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(editForm),
+    });
+    if (!res.ok) return alert((await res.json()).error ?? t.errDelete);
+    setEditingId(null);
+    load();
+  }
+
+  async function removeAdvance(advanceId: string) {
+    if (!confirm(t.confirmDelete)) return;
+    const res = await fetch(`/api/employee-advances/${advanceId}`, { method: "DELETE" });
+    if (!res.ok) return alert((await res.json()).error ?? t.errDelete);
     load();
   }
 
@@ -112,24 +139,47 @@ export default function AdvancesPage() {
               <th className="p-3 font-medium">{t.thDate}</th>
               <th className="p-3 font-medium">{t.thReason}</th>
               <th className="p-3 font-medium">{t.thStatus}</th>
+              <th className="p-3 font-medium"></th>
             </tr>
           </thead>
           <tbody>
-            {loading && <tr><td className="p-4 text-neutral-400" colSpan={5}>{t.loading}</td></tr>}
-            {!loading && advances.length === 0 && <tr><td className="p-4 text-neutral-400" colSpan={5}>{t.empty}</td></tr>}
-            {advances.map((a) => (
-              <tr key={a.id} className="border-t">
-                <td className="p-3 font-medium">{a.employee.name}</td>
-                <td className="p-3">{Number(a.amount).toLocaleString(localeCode)} {currency}</td>
-                <td className="p-3">{new Date(a.date).toLocaleDateString(localeCode)}</td>
-                <td className="p-3">{a.reason || "—"}</td>
-                <td className="p-3">
-                  <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${a.deducted ? "bg-success/10 text-success" : "bg-secondary/10 text-secondary"}`}>
-                    {a.deducted ? t.deducted : t.pending}
-                  </span>
-                </td>
-              </tr>
-            ))}
+            {loading && <tr><td className="p-4 text-neutral-400" colSpan={6}>{t.loading}</td></tr>}
+            {!loading && advances.length === 0 && <tr><td className="p-4 text-neutral-400" colSpan={6}>{t.empty}</td></tr>}
+            {advances.map((a) =>
+              editingId === a.id ? (
+                <tr key={a.id} className="border-t bg-neutral-50">
+                  <td className="p-2 font-medium">{a.employee.name}</td>
+                  <td className="p-2"><input type="number" step="0.01" value={editForm.amount} onChange={(e) => setEditForm({ ...editForm, amount: Number(e.target.value) })} className="w-full border rounded-lg px-2 py-1" /></td>
+                  <td className="p-2"><input type="date" value={editForm.date} onChange={(e) => setEditForm({ ...editForm, date: e.target.value })} className="w-full border rounded-lg px-2 py-1" /></td>
+                  <td className="p-2"><input value={editForm.reason} onChange={(e) => setEditForm({ ...editForm, reason: e.target.value })} className="w-full border rounded-lg px-2 py-1" /></td>
+                  <td className="p-2"></td>
+                  <td className="p-2 flex gap-2">
+                    <button onClick={() => saveEdited(a.id)} className="text-success text-xs">{locale === "ar" ? "حفظ" : "Save"}</button>
+                    <button onClick={() => setEditingId(null)} className="text-neutral-500 text-xs">{t.cancel}</button>
+                  </td>
+                </tr>
+              ) : (
+                <tr key={a.id} className="border-t">
+                  <td className="p-3 font-medium">{a.employee.name}</td>
+                  <td className="p-3">{Number(a.amount).toLocaleString(localeCode)} {currency}</td>
+                  <td className="p-3">{new Date(a.date).toLocaleDateString(localeCode)}</td>
+                  <td className="p-3">{a.reason || "—"}</td>
+                  <td className="p-3">
+                    <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${a.deducted ? "bg-success/10 text-success" : "bg-secondary/10 text-secondary"}`}>
+                      {a.deducted ? t.deducted : t.pending}
+                    </span>
+                  </td>
+                  <td className="p-3 flex gap-2">
+                    {!a.deducted && (
+                      <>
+                        <button onClick={() => startEdit(a)} className="text-primary hover:opacity-70"><Pencil size={14} /></button>
+                        <button onClick={() => removeAdvance(a.id)} className="text-danger hover:opacity-70"><Trash2 size={14} /></button>
+                      </>
+                    )}
+                  </td>
+                </tr>
+              )
+            )}
           </tbody>
         </table>
       </div>

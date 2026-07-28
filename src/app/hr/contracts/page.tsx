@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { AppShell } from "@/components/layout/app-shell";
 import { useLocale } from "@/lib/use-locale";
-import { Plus, X } from "lucide-react";
+import { Plus, X, Pencil, Trash2 } from "lucide-react";
 
 const dict = {
   ar: {
@@ -13,6 +13,7 @@ const dict = {
     salary: "الراتب في العقد *", notes: "ملاحظات", save: "حفظ العقد", saving: "جارٍ الحفظ...", err: "تعذر حفظ العقد",
     thEmployee: "الموظف", thType: "نوع العقد", thStart: "البداية", thEnd: "النهاية", thSalary: "الراتب",
     loading: "جارٍ التحميل...", empty: "لا يوجد عقود مسجلة بعد.", ongoing: "سارٍ",
+    confirmDelete: "تأكيد حذف العقد؟", errDelete: "تعذر الحذف",
   },
   en: {
     title: "Employee Contracts", newContract: "New Contract", cancel: "Cancel",
@@ -21,6 +22,7 @@ const dict = {
     salary: "Contract Salary *", notes: "Notes", save: "Save Contract", saving: "Saving...", err: "Failed to save contract",
     thEmployee: "Employee", thType: "Type", thStart: "Start", thEnd: "End", thSalary: "Salary",
     loading: "Loading...", empty: "No contracts recorded yet.", ongoing: "Ongoing",
+    confirmDelete: "Confirm deleting this contract?", errDelete: "Failed to delete",
   },
 };
 
@@ -36,6 +38,8 @@ export default function EmployeeContractsPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [form, setForm] = useState({ employeeId: "", contractType: "", startDate: "", endDate: "", salary: 0, notes: "" });
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState({ contractType: "", startDate: "", endDate: "", salary: 0, notes: "" });
 
   async function load() {
     setLoading(true);
@@ -60,6 +64,35 @@ export default function EmployeeContractsPage() {
     if (!res.ok) return setError(t.err);
     setForm({ employeeId: "", contractType: "", startDate: "", endDate: "", salary: 0, notes: "" });
     setShowForm(false);
+    load();
+  }
+
+  function startEdit(c: any) {
+    setEditingId(c.id);
+    setEditForm({
+      contractType: c.contractType,
+      startDate: new Date(c.startDate).toISOString().slice(0, 10),
+      endDate: c.endDate ? new Date(c.endDate).toISOString().slice(0, 10) : "",
+      salary: Number(c.salary),
+      notes: c.notes ?? "",
+    });
+  }
+
+  async function saveEdited(contractId: string) {
+    const res = await fetch(`/api/employee-contracts/${contractId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ...editForm, endDate: editForm.endDate || null }),
+    });
+    if (!res.ok) return alert((await res.json()).error ?? t.errDelete);
+    setEditingId(null);
+    load();
+  }
+
+  async function removeContract(contractId: string) {
+    if (!confirm(t.confirmDelete)) return;
+    const res = await fetch(`/api/employee-contracts/${contractId}`, { method: "DELETE" });
+    if (!res.ok) return alert((await res.json()).error ?? t.errDelete);
     load();
   }
 
@@ -120,20 +153,39 @@ export default function EmployeeContractsPage() {
               <th className="p-3 font-medium">{t.thStart}</th>
               <th className="p-3 font-medium">{t.thEnd}</th>
               <th className="p-3 font-medium">{t.thSalary}</th>
+              <th className="p-3 font-medium"></th>
             </tr>
           </thead>
           <tbody>
-            {loading && <tr><td className="p-4 text-neutral-400" colSpan={5}>{t.loading}</td></tr>}
-            {!loading && contracts.length === 0 && <tr><td className="p-4 text-neutral-400" colSpan={5}>{t.empty}</td></tr>}
-            {contracts.map((c) => (
-              <tr key={c.id} className="border-t">
-                <td className="p-3 font-medium">{c.employee.name}</td>
-                <td className="p-3">{c.contractType}</td>
-                <td className="p-3">{new Date(c.startDate).toLocaleDateString(localeCode)}</td>
-                <td className="p-3">{c.endDate ? new Date(c.endDate).toLocaleDateString(localeCode) : t.ongoing}</td>
-                <td className="p-3">{Number(c.salary).toLocaleString(localeCode)} {currency}</td>
-              </tr>
-            ))}
+            {loading && <tr><td className="p-4 text-neutral-400" colSpan={6}>{t.loading}</td></tr>}
+            {!loading && contracts.length === 0 && <tr><td className="p-4 text-neutral-400" colSpan={6}>{t.empty}</td></tr>}
+            {contracts.map((c) =>
+              editingId === c.id ? (
+                <tr key={c.id} className="border-t bg-neutral-50">
+                  <td className="p-2 font-medium">{c.employee.name}</td>
+                  <td className="p-2"><input value={editForm.contractType} onChange={(e) => setEditForm({ ...editForm, contractType: e.target.value })} className="w-full border rounded-lg px-2 py-1" /></td>
+                  <td className="p-2"><input type="date" value={editForm.startDate} onChange={(e) => setEditForm({ ...editForm, startDate: e.target.value })} className="w-full border rounded-lg px-2 py-1" /></td>
+                  <td className="p-2"><input type="date" value={editForm.endDate} onChange={(e) => setEditForm({ ...editForm, endDate: e.target.value })} className="w-full border rounded-lg px-2 py-1" /></td>
+                  <td className="p-2"><input type="number" step="0.01" value={editForm.salary} onChange={(e) => setEditForm({ ...editForm, salary: Number(e.target.value) })} className="w-full border rounded-lg px-2 py-1" /></td>
+                  <td className="p-2 flex gap-2">
+                    <button onClick={() => saveEdited(c.id)} className="text-success text-xs">{locale === "ar" ? "حفظ" : "Save"}</button>
+                    <button onClick={() => setEditingId(null)} className="text-neutral-500 text-xs">{t.cancel}</button>
+                  </td>
+                </tr>
+              ) : (
+                <tr key={c.id} className="border-t">
+                  <td className="p-3 font-medium">{c.employee.name}</td>
+                  <td className="p-3">{c.contractType}</td>
+                  <td className="p-3">{new Date(c.startDate).toLocaleDateString(localeCode)}</td>
+                  <td className="p-3">{c.endDate ? new Date(c.endDate).toLocaleDateString(localeCode) : t.ongoing}</td>
+                  <td className="p-3">{Number(c.salary).toLocaleString(localeCode)} {currency}</td>
+                  <td className="p-3 flex gap-2">
+                    <button onClick={() => startEdit(c)} className="text-primary hover:opacity-70"><Pencil size={14} /></button>
+                    <button onClick={() => removeContract(c.id)} className="text-danger hover:opacity-70"><Trash2 size={14} /></button>
+                  </td>
+                </tr>
+              )
+            )}
           </tbody>
         </table>
       </div>

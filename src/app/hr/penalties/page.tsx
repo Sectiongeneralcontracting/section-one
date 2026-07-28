@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { AppShell } from "@/components/layout/app-shell";
 import { useLocale } from "@/lib/use-locale";
-import { Plus, X } from "lucide-react";
+import { Plus, X, Pencil, Trash2 } from "lucide-react";
 
 const dict = {
   ar: {
@@ -13,6 +13,7 @@ const dict = {
     thEmployee: "الموظف", thAmount: "القيمة", thDate: "التاريخ", thReason: "السبب",
     loading: "جارٍ التحميل...", empty: "لا يوجد جزاءات مسجلة بعد.",
     note: "الجزاءات المسجلة خلال الشهر بتتخصم تلقائيًا وقت توليد راتب الموظف عن نفس الشهر.",
+    confirmDelete: "تأكيد حذف الجزاء؟", errDelete: "تعذر الحذف",
   },
   en: {
     title: "Employee Penalties", newPenalty: "New Penalty", cancel: "Cancel",
@@ -21,6 +22,7 @@ const dict = {
     thEmployee: "Employee", thAmount: "Amount", thDate: "Date", thReason: "Reason",
     loading: "Loading...", empty: "No penalties recorded yet.",
     note: "Penalties recorded within a month are automatically deducted when generating that month's payroll.",
+    confirmDelete: "Confirm deleting this penalty?", errDelete: "Failed to delete",
   },
 };
 
@@ -36,6 +38,8 @@ export default function PenaltiesPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [form, setForm] = useState({ employeeId: "", amount: 0, date: "", reason: "" });
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState({ amount: 0, date: "", reason: "" });
 
   async function load() {
     setLoading(true);
@@ -60,6 +64,29 @@ export default function PenaltiesPage() {
     if (!res.ok) return setError(t.err);
     setForm({ employeeId: "", amount: 0, date: "", reason: "" });
     setShowForm(false);
+    load();
+  }
+
+  function startEdit(p: any) {
+    setEditingId(p.id);
+    setEditForm({ amount: Number(p.amount), date: new Date(p.date).toISOString().slice(0, 10), reason: p.reason ?? "" });
+  }
+
+  async function saveEdited(penaltyId: string) {
+    const res = await fetch(`/api/employee-penalties/${penaltyId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(editForm),
+    });
+    if (!res.ok) return alert((await res.json()).error ?? t.errDelete);
+    setEditingId(null);
+    load();
+  }
+
+  async function removePenalty(penaltyId: string) {
+    if (!confirm(t.confirmDelete)) return;
+    const res = await fetch(`/api/employee-penalties/${penaltyId}`, { method: "DELETE" });
+    if (!res.ok) return alert((await res.json()).error ?? t.errDelete);
     load();
   }
 
@@ -111,19 +138,37 @@ export default function PenaltiesPage() {
               <th className="p-3 font-medium">{t.thAmount}</th>
               <th className="p-3 font-medium">{t.thDate}</th>
               <th className="p-3 font-medium">{t.thReason}</th>
+              <th className="p-3 font-medium"></th>
             </tr>
           </thead>
           <tbody>
-            {loading && <tr><td className="p-4 text-neutral-400" colSpan={4}>{t.loading}</td></tr>}
-            {!loading && penalties.length === 0 && <tr><td className="p-4 text-neutral-400" colSpan={4}>{t.empty}</td></tr>}
-            {penalties.map((p) => (
-              <tr key={p.id} className="border-t">
-                <td className="p-3 font-medium">{p.employee.name}</td>
-                <td className="p-3 text-danger">{Number(p.amount).toLocaleString(localeCode)} {currency}</td>
-                <td className="p-3">{new Date(p.date).toLocaleDateString(localeCode)}</td>
-                <td className="p-3">{p.reason}</td>
-              </tr>
-            ))}
+            {loading && <tr><td className="p-4 text-neutral-400" colSpan={5}>{t.loading}</td></tr>}
+            {!loading && penalties.length === 0 && <tr><td className="p-4 text-neutral-400" colSpan={5}>{t.empty}</td></tr>}
+            {penalties.map((p) =>
+              editingId === p.id ? (
+                <tr key={p.id} className="border-t bg-neutral-50">
+                  <td className="p-2 font-medium">{p.employee.name}</td>
+                  <td className="p-2"><input type="number" step="0.01" value={editForm.amount} onChange={(e) => setEditForm({ ...editForm, amount: Number(e.target.value) })} className="w-full border rounded-lg px-2 py-1" /></td>
+                  <td className="p-2"><input type="date" value={editForm.date} onChange={(e) => setEditForm({ ...editForm, date: e.target.value })} className="w-full border rounded-lg px-2 py-1" /></td>
+                  <td className="p-2"><input value={editForm.reason} onChange={(e) => setEditForm({ ...editForm, reason: e.target.value })} className="w-full border rounded-lg px-2 py-1" /></td>
+                  <td className="p-2 flex gap-2">
+                    <button onClick={() => saveEdited(p.id)} className="text-success text-xs">{locale === "ar" ? "حفظ" : "Save"}</button>
+                    <button onClick={() => setEditingId(null)} className="text-neutral-500 text-xs">{t.cancel}</button>
+                  </td>
+                </tr>
+              ) : (
+                <tr key={p.id} className="border-t">
+                  <td className="p-3 font-medium">{p.employee.name}</td>
+                  <td className="p-3 text-danger">{Number(p.amount).toLocaleString(localeCode)} {currency}</td>
+                  <td className="p-3">{new Date(p.date).toLocaleDateString(localeCode)}</td>
+                  <td className="p-3">{p.reason}</td>
+                  <td className="p-3 flex gap-2">
+                    <button onClick={() => startEdit(p)} className="text-primary hover:opacity-70"><Pencil size={14} /></button>
+                    <button onClick={() => removePenalty(p.id)} className="text-danger hover:opacity-70"><Trash2 size={14} /></button>
+                  </td>
+                </tr>
+              )
+            )}
           </tbody>
         </table>
       </div>

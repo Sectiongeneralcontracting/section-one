@@ -5,7 +5,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { AppShell } from "@/components/layout/app-shell";
 import { useLocale } from "@/lib/use-locale";
-import { Plus, X, Star } from "lucide-react";
+import { Plus, X, Star, Pencil, Trash2 } from "lucide-react";
 
 const contractStatusLabels: Record<string, { ar: string; en: string }> = {
   ACTIVE: { ar: "ساري", en: "Active" },
@@ -58,6 +58,8 @@ export default function ContractorDetailPage() {
   const [evalSaving, setEvalSaving] = useState(false);
   const [evalError, setEvalError] = useState("");
   const [evalForm, setEvalForm] = useState({ projectId: "", qualityScore: 5, timelinessScore: 5, safetyScore: 5, notes: "" });
+  const [editingEvalId, setEditingEvalId] = useState<string | null>(null);
+  const [editEvalForm, setEditEvalForm] = useState({ qualityScore: 5, timelinessScore: 5, safetyScore: 5 });
 
   async function load() {
     const res = await fetch(`/api/subcontractors/${id}`);
@@ -97,6 +99,29 @@ export default function ContractorDetailPage() {
     if (!res.ok) return setEvalError((await res.json()).error ?? t.errEval);
     setEvalForm({ projectId: "", qualityScore: 5, timelinessScore: 5, safetyScore: 5, notes: "" });
     setShowEvalForm(false);
+    load();
+  }
+
+  function startEditEval(ev: any) {
+    setEditingEvalId(ev.id);
+    setEditEvalForm({ qualityScore: ev.qualityScore, timelinessScore: ev.timelinessScore, safetyScore: ev.safetyScore });
+  }
+
+  async function saveEditedEval(evalId: string) {
+    const res = await fetch(`/api/subcontractor-evaluations/${evalId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(editEvalForm),
+    });
+    if (!res.ok) return alert((await res.json()).error);
+    setEditingEvalId(null);
+    load();
+  }
+
+  async function removeEval(evalId: string) {
+    if (!confirm(locale === "ar" ? "تأكيد حذف التقييم؟" : "Confirm deleting this evaluation?")) return;
+    const res = await fetch(`/api/subcontractor-evaluations/${evalId}`, { method: "DELETE" });
+    if (!res.ok) return alert((await res.json()).error);
     load();
   }
 
@@ -223,22 +248,41 @@ export default function ContractorDetailPage() {
               <th className="p-3 font-medium">{t.thTimeliness}</th>
               <th className="p-3 font-medium">{t.thSafety}</th>
               <th className="p-3 font-medium">{t.thAvg}</th>
+              <th className="p-3 font-medium"></th>
             </tr>
           </thead>
           <tbody>
-            {sub.evaluations.length === 0 && <tr><td className="p-4 text-neutral-400" colSpan={5}>{t.noEvals}</td></tr>}
-            {sub.evaluations.map((ev: any) => (
-              <tr key={ev.id} className="border-t">
-                <td className="p-3">{new Date(ev.evaluatedAt).toLocaleDateString(localeCode)}</td>
-                <td className="p-3">{ev.qualityScore}/5</td>
-                <td className="p-3">{ev.timelinessScore}/5</td>
-                <td className="p-3">{ev.safetyScore}/5</td>
-                <td className="p-3 font-semibold flex items-center gap-1">
-                  <Star size={14} className="text-warning fill-warning" />
-                  {((ev.qualityScore + ev.timelinessScore + ev.safetyScore) / 3).toFixed(1)}
-                </td>
-              </tr>
-            ))}
+            {sub.evaluations.length === 0 && <tr><td className="p-4 text-neutral-400" colSpan={6}>{t.noEvals}</td></tr>}
+            {sub.evaluations.map((ev: any) =>
+              editingEvalId === ev.id ? (
+                <tr key={ev.id} className="border-t bg-neutral-50">
+                  <td className="p-2 text-neutral-400">{new Date(ev.evaluatedAt).toLocaleDateString(localeCode)}</td>
+                  <td className="p-2"><input type="number" min={1} max={5} value={editEvalForm.qualityScore} onChange={(e) => setEditEvalForm({ ...editEvalForm, qualityScore: Number(e.target.value) })} className="w-full border rounded-lg px-2 py-1" /></td>
+                  <td className="p-2"><input type="number" min={1} max={5} value={editEvalForm.timelinessScore} onChange={(e) => setEditEvalForm({ ...editEvalForm, timelinessScore: Number(e.target.value) })} className="w-full border rounded-lg px-2 py-1" /></td>
+                  <td className="p-2"><input type="number" min={1} max={5} value={editEvalForm.safetyScore} onChange={(e) => setEditEvalForm({ ...editEvalForm, safetyScore: Number(e.target.value) })} className="w-full border rounded-lg px-2 py-1" /></td>
+                  <td className="p-2"></td>
+                  <td className="p-2 flex gap-2">
+                    <button onClick={() => saveEditedEval(ev.id)} className="text-success text-xs">{locale === "ar" ? "حفظ" : "Save"}</button>
+                    <button onClick={() => setEditingEvalId(null)} className="text-neutral-500 text-xs">{locale === "ar" ? "إلغاء" : "Cancel"}</button>
+                  </td>
+                </tr>
+              ) : (
+                <tr key={ev.id} className="border-t">
+                  <td className="p-3">{new Date(ev.evaluatedAt).toLocaleDateString(localeCode)}</td>
+                  <td className="p-3">{ev.qualityScore}/5</td>
+                  <td className="p-3">{ev.timelinessScore}/5</td>
+                  <td className="p-3">{ev.safetyScore}/5</td>
+                  <td className="p-3 font-semibold flex items-center gap-1">
+                    <Star size={14} className="text-warning fill-warning" />
+                    {((ev.qualityScore + ev.timelinessScore + ev.safetyScore) / 3).toFixed(1)}
+                  </td>
+                  <td className="p-3 flex gap-2">
+                    <button onClick={() => startEditEval(ev)} className="text-primary hover:opacity-70"><Pencil size={14} /></button>
+                    <button onClick={() => removeEval(ev.id)} className="text-danger hover:opacity-70"><Trash2 size={14} /></button>
+                  </td>
+                </tr>
+              )
+            )}
           </tbody>
         </table>
       </div>
