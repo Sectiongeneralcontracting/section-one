@@ -16,6 +16,7 @@ import {
   BorderStyle,
   ShadingType,
   VerticalAlign,
+  Footer,
 } from "docx";
 
 // كل فقرة عربية لازم تبقى bidirectional عشان تتظبط RTL صح في Word
@@ -54,13 +55,13 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
       headerChildren.push(
         new Paragraph({
           alignment: AlignmentType.LEFT,
-          children: [new ImageRun({ data: img.buffer, type: img.type, transformation: { width: 220, height: 220 } })],
+          children: [new ImageRun({ data: img.buffer, type: img.type, transformation: { width: 440, height: 440 } })],
         })
       );
     }
   }
 
-  const headerTableWidths = [4200, 5340]; // اللوجو | رقم العرض والتاريخ
+  const headerTableWidths = [6300, 3240]; // اللوجو | رقم العرض والتاريخ
   const headerTable = new Table({
     columnWidths: headerTableWidths,
     width: { size: 9540, type: WidthType.DXA },
@@ -169,7 +170,19 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
     sections: [
       {
         properties: {
-          page: { size: { width: 11906, height: 16838 }, margin: { top: 720, bottom: 720, left: 720, right: 720 } }, // A4
+          page: { size: { width: 11906, height: 16838 }, margin: { top: 720, bottom: 900, left: 720, right: 720 } }, // A4
+        },
+        footers: {
+          default: new Footer({
+            children: [
+              rtlPara(
+                [
+                  new TextRun({ text: "www.section-eg.com   |   info@section-eg.com   |   03 5516692   |   01110444395", size: 16, color: "888888" }),
+                ],
+                { alignment: AlignmentType.CENTER, border: { top: { style: BorderStyle.SINGLE, size: 4, color: "DDDDDD", space: 8 } } }
+              ),
+            ],
+          }),
         },
         children: [
           headerTable,

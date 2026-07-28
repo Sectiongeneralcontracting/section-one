@@ -330,7 +330,7 @@ export default function QuotationDetailPage() {
           </div>
           <div className="text-center">
             {company?.logoUrl ? (
-              <img src={company.logoUrl} alt="" className="h-48 w-48 object-contain" />
+              <img src={company.logoUrl} alt="" className="h-96 w-96 object-contain" />
             ) : (
               <p className="text-lg font-bold" style={{ color: "#C9692E" }}>{company?.name ?? "Section General Contracting"}</p>
             )}
@@ -385,6 +385,12 @@ export default function QuotationDetailPage() {
         <div className="text-left mt-16">
           <p className="text-sm font-bold">{t.techOfficeManager}</p>
           <p className="text-sm">{t.managerName}</p>
+        </div>
+
+        <div className="fixed bottom-0 left-0 right-0 text-center border-t pt-2 pb-4" style={{ borderColor: "#ddd" }}>
+          <p className="text-xs text-neutral-500">
+            www.section-eg.com&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;info@section-eg.com&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;03 5516692&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;01110444395
+          </p>
         </div>
       </div>
     </AppShell>
