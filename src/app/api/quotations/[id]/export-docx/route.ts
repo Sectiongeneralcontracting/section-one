@@ -60,7 +60,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
     }
   }
 
-  const headerTableWidths = [3000, 6540]; // شعار | اسم الشركة وبياناتها
+  const headerTableWidths = [3400, 6140]; // اللوجو | العنوان ورقم العرض والتاريخ
   const headerTable = new Table({
     columnWidths: headerTableWidths,
     width: { size: 9540, type: WidthType.DXA },
@@ -79,15 +79,18 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
             width: { size: headerTableWidths[1], type: WidthType.DXA },
             verticalAlign: VerticalAlign.CENTER,
             children: [
-              rtlPara([new TextRun({ text: company?.name ?? "Section General Contracting", bold: true, size: 28, color: "C9692E" })], { alignment: AlignmentType.RIGHT }),
-              rtlPara([new TextRun({ text: company?.address ?? "", size: 18, color: "666666" })], { alignment: AlignmentType.RIGHT }),
-              rtlPara([new TextRun({ text: [company?.phone, company?.email].filter(Boolean).join("  |  "), size: 18, color: "666666" })], { alignment: AlignmentType.RIGHT }),
+              rtlPara([new TextRun({ text: "عرض سعر", bold: true, size: 32 })], { alignment: AlignmentType.RIGHT }),
+              rtlPara([new TextRun({ text: `رقم العرض: ${quotation.quotationNumber}`, bold: true, size: 20 })], { alignment: AlignmentType.RIGHT }),
+              rtlPara([new TextRun({ text: fmtDate(quotation.date), size: 16, color: "888888" })], { alignment: AlignmentType.RIGHT }),
             ],
           }),
           new TableCell({
             width: { size: headerTableWidths[0], type: WidthType.DXA },
             verticalAlign: VerticalAlign.CENTER,
-            children: headerChildren.length > 0 ? headerChildren : [new Paragraph({ children: [] })],
+            children:
+              headerChildren.length > 0
+                ? headerChildren
+                : [rtlPara([new TextRun({ text: company?.name ?? "Section General Contracting", bold: true, size: 26, color: "C9692E" })], { alignment: AlignmentType.CENTER })],
           }),
         ],
       }),
@@ -171,13 +174,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
         },
         children: [
           headerTable,
-          new Paragraph({ children: [], spacing: { after: 200 } }),
-          rtlPara([new TextRun({ text: "عرض سعر", bold: true, size: 32 })], { alignment: AlignmentType.CENTER, spacing: { after: 100 } }),
-          rtlPara(
-            [new TextRun({ text: `رقم العرض: ${quotation.quotationNumber}`, size: 20, bold: true })],
-            { alignment: AlignmentType.CENTER }
-          ),
-          rtlPara([new TextRun({ text: fmtDate(quotation.date), size: 20 })], { alignment: AlignmentType.CENTER, spacing: { after: 300 } }),
+          new Paragraph({ children: [], spacing: { after: 300 } }),
 
           rtlPara(
             [new TextRun({ text: `السادة/ ${quotation.client.name}                                                     المحترمين،،،`, bold: true, size: 22 })],
@@ -216,8 +213,11 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
           ),
           rtlPara(
             [new TextRun({ text: "وتفضلوا بقبول فائق الاحترام والتقدير،،،", size: 20 })],
-            { alignment: AlignmentType.CENTER }
+            { alignment: AlignmentType.CENTER, spacing: { after: 600 } }
           ),
+
+          rtlPara([new TextRun({ text: "مدير المكتب الفني", bold: true, size: 20 })], { alignment: AlignmentType.RIGHT }),
+          rtlPara([new TextRun({ text: "م. اسماء محمود", size: 20 })], { alignment: AlignmentType.RIGHT }),
         ],
       },
     ],

@@ -41,6 +41,7 @@ const dict = {
     validUntilPrint: "العرض ساري حتى", hopeApproval: "نأمل أن ينال عرضنا رضاكم", regards: "وتفضلوا بقبول فائق الاحترام والتقدير،،،",
     dearSir: "المحترمين،،،", greeting: "تحية طيبة وبعد،", introText: "يسرّنا أن نتقدّم لسيادتكم بعرض السعر الخاص بـ",
     asDetailedBelow: "كما هو موضّح بالتفصيل أدناه:", offerNumber: "رقم العرض",
+    techOfficeManager: "مدير المكتب الفني", managerName: "م. اسماء محمود",
   },
   en: {
     loading: "Loading...", client: "Client", projectName: "Proposed Project", date: "Date", validUntil: "Valid Until",
@@ -60,6 +61,7 @@ const dict = {
     validUntilPrint: "Valid until", hopeApproval: "We hope our offer meets your approval", regards: "Best regards,",
     dearSir: "Dear Sir/Madam,", greeting: "Greetings,", introText: "We are pleased to submit our quotation for",
     asDetailedBelow: "as detailed below:", offerNumber: "Quotation No.",
+    techOfficeManager: "Technical Office Manager", managerName: "Eng. Asmaa Mahmoud",
   },
 };
 
@@ -323,16 +325,18 @@ export default function QuotationDetailPage() {
       <div className="hidden print:block" dir="rtl">
         <div className="flex items-start justify-between mb-8">
           <div className="text-right">
-            <p className="text-xl font-bold" style={{ color: "#C9692E" }}>{company?.name ?? "Section General Contracting"}</p>
-            {company?.address && <p className="text-xs text-neutral-500">{company.address}</p>}
-            <p className="text-xs text-neutral-500">{[company?.phone, company?.email].filter(Boolean).join("  |  ")}</p>
+            <h1 className="text-2xl font-bold mb-1">{locale === "ar" ? "عرض سعر" : "Quotation"}</h1>
+            <p className="text-sm font-semibold">{t.offerNumber}: {quotation.quotationNumber}</p>
+            <p className="text-xs text-neutral-500">{new Date(quotation.date).toLocaleDateString(localeCode, { year: "numeric", month: "long", day: "numeric" })}</p>
           </div>
-          {company?.logoUrl && <img src={company.logoUrl} alt="" className="h-20 w-20 object-contain" />}
+          <div className="text-center">
+            {company?.logoUrl ? (
+              <img src={company.logoUrl} alt="" className="h-24 w-24 object-contain" />
+            ) : (
+              <p className="text-lg font-bold" style={{ color: "#C9692E" }}>{company?.name ?? "Section General Contracting"}</p>
+            )}
+          </div>
         </div>
-
-        <h1 className="text-center text-2xl font-bold mb-1">{locale === "ar" ? "عرض سعر" : "Quotation"}</h1>
-        <p className="text-center text-sm font-semibold">{t.offerNumber}: {quotation.quotationNumber}</p>
-        <p className="text-center text-sm text-neutral-500 mb-6">{new Date(quotation.date).toLocaleDateString(localeCode, { year: "numeric", month: "long", day: "numeric" })}</p>
 
         <p className="font-bold mb-1">{locale === "ar" ? "السادة/" : "Dear"} {quotation.client?.name ?? "—"} {t.dearSir}</p>
         <p className="mb-1">{t.greeting}</p>
@@ -376,7 +380,12 @@ export default function QuotationDetailPage() {
         {quotation.notes && <p className="text-xs text-neutral-500 mb-4">{quotation.notes}</p>}
 
         <p className="text-center font-bold text-lg mt-10 mb-1">{t.hopeApproval}</p>
-        <p className="text-center text-sm">{t.regards}</p>
+        <p className="text-center text-sm mb-16">{t.regards}</p>
+
+        <div className="text-right mt-16">
+          <p className="text-sm font-bold">{t.techOfficeManager}</p>
+          <p className="text-sm">{t.managerName}</p>
+        </div>
       </div>
     </AppShell>
   );
