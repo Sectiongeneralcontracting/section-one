@@ -86,7 +86,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
           }),
           new TableCell({
             width: { size: headerTableWidths[0], type: WidthType.DXA },
-            verticalAlign: VerticalAlign.CENTER,
+            verticalAlign: VerticalAlign.TOP,
             children:
               headerChildren.length > 0
                 ? headerChildren
@@ -186,8 +186,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
         },
         children: [
           headerTable,
-          new Paragraph({ children: [], spacing: { after: 100 } }),
-          rtlPara([new TextRun({ text: "عرض سعر", bold: true, size: 32 })], { alignment: AlignmentType.CENTER, spacing: { after: 400 } }),
+          rtlPara([new TextRun({ text: "عرض سعر", bold: true, size: 32 })], { alignment: AlignmentType.CENTER, spacing: { before: 0, after: 300 } }),
 
           rtlPara(
             [new TextRun({ text: `السادة/ ${quotation.client.name}                                                     المحترمين،،،`, bold: true, size: 22 })],

@@ -323,12 +323,12 @@ export default function QuotationDetailPage() {
 
       {/* قسم مخصص للطباعة فقط — بنفس شكل ملف Word المُصدَّر */}
       <div className="hidden print:block" dir="rtl">
-        <div className="flex items-start justify-between mb-2">
+        <div className="flex items-start justify-between">
           <div className="text-right">
             <p className="text-sm font-semibold">{t.offerNumber}: {quotation.quotationNumber}</p>
             <p className="text-xs text-neutral-500">{new Date(quotation.date).toLocaleDateString(localeCode, { year: "numeric", month: "long", day: "numeric" })}</p>
           </div>
-          <div className="text-center">
+          <div className="text-center -mt-6">
             {company?.logoUrl ? (
               <img src={company.logoUrl} alt="" className="h-96 w-96 object-contain" />
             ) : (
@@ -336,7 +336,7 @@ export default function QuotationDetailPage() {
             )}
           </div>
         </div>
-        <h1 className="text-center text-2xl font-bold mb-8">{locale === "ar" ? "عرض سعر" : "Quotation"}</h1>
+        <h1 className="text-center text-2xl font-bold -mt-6 mb-6">{locale === "ar" ? "عرض سعر" : "Quotation"}</h1>
 
         <p className="font-bold mb-1">{locale === "ar" ? "السادة/" : "Dear"} {quotation.client?.name ?? "—"} {t.dearSir}</p>
         <p className="mb-1">{t.greeting}</p>
