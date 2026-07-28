@@ -12,6 +12,7 @@ const items = [
   { href: "/projects", label: "المشاريع", labelEn: "Projects", icon: Briefcase, module: "projects" },
   { href: "/contracts", label: "العقود", labelEn: "Contracts", icon: FileSignature, module: "contracts" },
   { href: "/clients", label: "العملاء", labelEn: "Clients", icon: Users, module: "clients" },
+  { href: "/quotations", label: "عروض الأسعار", labelEn: "Quotations", icon: FileText, module: "quotations" },
   { href: "/partners", label: "الشركاء", labelEn: "Partners", icon: HandCoins, module: "partners" },
   { href: "/suppliers", label: "الموردون", labelEn: "Suppliers", icon: Truck, module: "suppliers" },
   { href: "/purchase-orders", label: "أوامر الشراء", labelEn: "Purchase Orders", icon: ShoppingCart, module: "purchase-orders" },

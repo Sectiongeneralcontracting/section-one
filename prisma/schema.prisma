@@ -102,6 +102,52 @@ model SystemSettings {
 
 // ---------------- Core Domain: Clients / Projects ----------------
 
+enum QuotationStatus {
+  DRAFT     // مسودة
+  SENT      // مُرسل للعميل
+  ACCEPTED  // موافق عليه من العميل
+  REJECTED  // مرفوض
+  CONVERTED // اتحوّل لعقد فعلي بالفعل
+}
+
+// عرض سعر لعميل — لو اتقبل، بيتحوّل لمشروع وعقد حقيقيين بضغطة واحدة
+model Quotation {
+  id              String          @id @default(cuid())
+  quotationNumber String          @unique
+  clientId        String
+  client          Client          @relation(fields: [clientId], references: [id])
+  projectName     String // اسم المشروع المقترح
+  date            DateTime        @default(now())
+  validUntil      DateTime?
+  status          QuotationStatus @default(DRAFT)
+  notes           String?
+  createdById     String?
+
+  convertedProjectId String?  @unique
+  convertedProject   Project? @relation(fields: [convertedProjectId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  items QuotationItem[]
+
+  @@map("quotations")
+}
+
+model QuotationItem {
+  id          String    @id @default(cuid())
+  quotationId String
+  quotation   Quotation @relation(fields: [quotationId], references: [id])
+  code        String?
+  description String
+  unit        String
+  quantity    Decimal   @db.Decimal(18, 3)
+  unitPrice   Decimal   @db.Decimal(18, 2)
+  createdAt   DateTime  @default(now())
+
+  @@map("quotation_items")
+}
+
 model Client {
   id          String    @id @default(cuid())
   name        String
@@ -114,6 +160,7 @@ model Client {
   updatedAt   DateTime  @updatedAt
 
   projects    Project[]
+  quotations  Quotation[]
 
   @@map("clients")
 }
@@ -157,6 +204,7 @@ model Project {
   subcontractorContracts SubcontractorContract[]
   siteDailyReports       SiteDailyReport[]
   siteRequests           SiteRequest[]
+  quotation              Quotation?
 
   @@map("projects")
 }
@@ -1048,6 +1096,8 @@ enum NotificationType {
   SITE_REQUEST_APPROVED
   SITE_REQUEST_REJECTED
   ATTENDANCE_PENDING_APPROVAL
+  QUOTATION_ACCEPTED
+  QUOTATION_CONVERTED
 }
 
 model Notification {

@@ -7,7 +7,9 @@ export const MODULES: ModuleDef[] = [
   { key: "dashboard", label: "الرئيسية", labelEn: "Dashboard", href: "/dashboard" },
   { key: "projects", label: "المشاريع", labelEn: "Projects", href: "/projects" },
   { key: "contracts", label: "العقود", labelEn: "Contracts", href: "/contracts" },
+  { key: "quotations", label: "عروض الأسعار", labelEn: "Quotations", href: "/quotations" },
   { key: "clients", label: "العملاء", labelEn: "Clients", href: "/clients" },
+  { key: "quotations", label: "عروض الأسعار", labelEn: "Quotations", href: "/quotations" },
   { key: "partners", label: "الشركاء", labelEn: "Partners", href: "/partners" },
   { key: "suppliers", label: "الموردون", labelEn: "Suppliers", href: "/suppliers" },
   { key: "purchase-orders", label: "أوامر الشراء", labelEn: "Purchase Orders", href: "/purchase-orders" },
@@ -71,6 +73,8 @@ export const NOTIFICATION_MODULE_MAP: Record<string, string> = {
   SITE_REQUEST_APPROVED: "site-requests",
   SITE_REQUEST_REJECTED: "site-requests",
   ATTENDANCE_PENDING_APPROVAL: "attendance",
+  QUOTATION_ACCEPTED: "quotations",
+  QUOTATION_CONVERTED: "quotations",
 };
 
 // صلاحيات افتراضية منطقية لكل دور جديد — بتتحط أول مرة بس، وبعدين الأدمن يقدر يعدّلها من الإعدادات
@@ -84,8 +88,8 @@ export const DEFAULT_PERMISSIONS: Record<string, { view: string[]; edit: string[
     edit: ["purchase-orders", "payroll", "head-office-expenses", "my-attendance"],
   },
   FINANCE_MANAGER: {
-    view: ["dashboard", "projects", "clients", "partners", "contracts", "reports", "payroll", "head-office-expenses", "site-requests", "attendance", "my-attendance"],
-    edit: ["partners", "reports", "head-office-expenses", "site-requests", "attendance", "my-attendance"],
+    view: ["dashboard", "projects", "clients", "partners", "contracts", "quotations", "reports", "payroll", "head-office-expenses", "site-requests", "attendance", "my-attendance"],
+    edit: ["partners", "reports", "head-office-expenses", "site-requests", "attendance", "my-attendance", "quotations"],
   },
   HR_MANAGER: {
     view: ["dashboard", "employees", "hr-extra", "attendance", "payroll", "my-attendance"],
