@@ -17,6 +17,7 @@ const employeeSchema = z.object({
   bankName: z.string().optional(),
   bankAccountNumber: z.string().optional(),
   projectId: z.string().optional().nullable(), // فاضي/null = المكتب الرئيسي
+  photoUrl: z.string().optional(),
   notes: z.string().optional(),
 });
 

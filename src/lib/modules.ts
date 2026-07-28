@@ -39,6 +39,40 @@ export const ROLE_LABELS: Record<string, { ar: string; en: string }> = {
 
 export const ALL_ROLES = Object.keys(ROLE_LABELS);
 
+// ربط كل نوع إشعار بالموديول اللي بيتبعله — يُستخدم لفلترة الإشعارات حسب صلاحية عرض كل مستخدم
+// أي نوع إشعار مش موجود هنا بيتعتبر عام ويظهر للجميع (زي إشعارات عامة عن النظام)
+export const NOTIFICATION_MODULE_MAP: Record<string, string> = {
+  PROJECT_READY_TO_CLOSE: "projects",
+  PROJECT_REOPENED: "projects",
+  PROJECT_CREATED: "projects",
+  PROJECT_CLOSED: "projects",
+  MILESTONE_COMPLETED: "projects",
+  VARIATION_ORDER_APPROVED: "projects",
+  PARTNER_CONTRIBUTION_EDITED: "partners",
+  CONTRACT_VALUE_EDITED: "contracts",
+  CONTRACT_CREATED: "contracts",
+  CERTIFICATE_SUBMITTED: "contracts",
+  CERTIFICATE_APPROVED: "contracts",
+  CERTIFICATE_PAID: "contracts",
+  EXPENSE_EDITED: "projects",
+  PURCHASE_ORDER_CREATED: "purchase-orders",
+  PURCHASE_ORDER_APPROVED: "purchase-orders",
+  EQUIPMENT_ASSIGNED: "equipment",
+  EQUIPMENT_MAINTENANCE: "equipment",
+  PAYROLL_GENERATED: "payroll",
+  PAYROLL_PAID: "payroll",
+  EMPLOYEE_ADVANCE_RECORDED: "hr-extra",
+  EMPLOYEE_PENALTY_RECORDED: "hr-extra",
+  LEAVE_REQUEST_SUBMITTED: "hr-extra",
+  HEAD_OFFICE_EXPENSE_DISTRIBUTED: "head-office-expenses",
+  SUBCONTRACTOR_PAYMENT_RECORDED: "contractors",
+  SITE_REQUEST_SUBMITTED: "site-requests",
+  SITE_REQUEST_FINANCE_APPROVED: "site-requests",
+  SITE_REQUEST_APPROVED: "site-requests",
+  SITE_REQUEST_REJECTED: "site-requests",
+  ATTENDANCE_PENDING_APPROVAL: "attendance",
+};
+
 // صلاحيات افتراضية منطقية لكل دور جديد — بتتحط أول مرة بس، وبعدين الأدمن يقدر يعدّلها من الإعدادات
 export const DEFAULT_PERMISSIONS: Record<string, { view: string[]; edit: string[] }> = {
   SITE_ENGINEER: {

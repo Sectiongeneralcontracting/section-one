@@ -32,9 +32,11 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
         department: body.department ?? undefined,
         phone: body.phone ?? undefined,
         baseSalary: body.baseSalary ?? undefined,
+        hireDate: body.hireDate ? new Date(body.hireDate) : undefined,
         isActive: body.isActive ?? undefined,
         bankName: body.bankName ?? undefined,
         bankAccountNumber: body.bankAccountNumber ?? undefined,
+        photoUrl: body.photoUrl !== undefined ? (body.photoUrl || null) : undefined,
         projectId: body.projectId !== undefined ? (body.projectId || null) : undefined,
         userId: body.userId !== undefined ? (body.userId || null) : undefined,
       },
@@ -54,4 +56,34 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   });
 
   return NextResponse.json(employee);
+}
+
+export async function DELETE(_req: Request, { params }: { params: { id: string } }) {
+  const session = await getServerSession(authOptions);
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if ((session.user as any).role !== "ADMIN") {
+    return NextResponse.json({ error: "حذف الموظف يتطلب صلاحية Admin" }, { status: 403 });
+  }
+
+  const before = await prisma.employee.findUnique({ where: { id: params.id } });
+  if (!before) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+  try {
+    await prisma.employee.delete({ where: { id: params.id } });
+  } catch {
+    return NextResponse.json(
+      { error: "تعذر حذف الموظف لأن له سجلات مرتبطة (رواتب، حضور، عقود...) — عطّل حسابه بدل الحذف" },
+      { status: 400 }
+    );
+  }
+
+  await logAudit({
+    userId: (session.user as any).id,
+    action: "EMPLOYEE_DELETED",
+    entityType: "Employee",
+    entityId: params.id,
+    before,
+  });
+
+  return NextResponse.json({ ok: true });
 }
