@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { AppShell } from "@/components/layout/app-shell";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { useLocale } from "@/lib/use-locale";
-import { Plus, X, Lock, RotateCcw } from "lucide-react";
+import { Plus, X, Lock, RotateCcw, Pencil, Trash2 } from "lucide-react";
 
 const categoryLabels: Record<string, { ar: string; en: string }> = {
   MATERIALS: { ar: "مواد", en: "Materials" },
@@ -35,6 +35,7 @@ const dict = {
     clientPaymentsTitle: "مدفوعات العميل الفعلية", newPayment: "دفعة جديدة",
     paymentAmount: "قيمة الدفعة *", paymentDate: "تاريخ الدفعة", paymentNotes: "ملاحظات",
     savePayment: "حفظ الدفعة", errPayment: "تعذر تسجيل الدفعة", noPayments: "لا يوجد دفعات مسجلة بعد.",
+    savePaymentEdit: "حفظ", cancelPaymentEdit: "إلغاء", confirmDeletePayment: "تأكيد حذف الدفعة؟ العملية لا يمكن التراجع عنها.",
     thPaymentDate: "التاريخ", thPaymentAmount: "القيمة", thPaymentNotes: "ملاحظات",
     totalClientPaid: "إجمالي المدفوع من العميل",
     // نسبة الإنجاز
@@ -81,6 +82,7 @@ const dict = {
     clientPaymentsTitle: "Actual Client Payments", newPayment: "New Payment",
     paymentAmount: "Payment Amount *", paymentDate: "Payment Date", paymentNotes: "Notes",
     savePayment: "Save Payment", errPayment: "Failed to record payment", noPayments: "No payments recorded yet.",
+    savePaymentEdit: "Save", cancelPaymentEdit: "Cancel", confirmDeletePayment: "Confirm deleting this payment? This cannot be undone.",
     thPaymentDate: "Date", thPaymentAmount: "Amount", thPaymentNotes: "Notes",
     totalClientPaid: "Total Paid by Client",
     progressTitle: "Progress", saveProgress: "Save Progress", errProgress: "Failed to save progress",
@@ -133,6 +135,8 @@ export default function ProjectDetailPage() {
   const [paymentSaving, setPaymentSaving] = useState(false);
   const [paymentError, setPaymentError] = useState("");
   const [paymentForm, setPaymentForm] = useState({ amount: 0, date: "", notes: "" });
+  const [editingPaymentId, setEditingPaymentId] = useState<string | null>(null);
+  const [editPaymentForm, setEditPaymentForm] = useState({ amount: 0, date: "", notes: "" });
 
   // نسبة الإنجاز
   const [progressValue, setProgressValue] = useState(0);
@@ -233,6 +237,29 @@ export default function ProjectDetailPage() {
     if (!res.ok) return setPaymentError(t.errPayment);
     setPaymentForm({ amount: 0, date: "", notes: "" });
     setShowPaymentForm(false);
+    load();
+  }
+
+  function startEditPayment(p: any) {
+    setEditingPaymentId(p.id);
+    setEditPaymentForm({ amount: Number(p.amount), date: new Date(p.date).toISOString().slice(0, 10), notes: p.notes ?? "" });
+  }
+
+  async function saveEditedPayment(paymentId: string) {
+    const res = await fetch(`/api/client-payments/${paymentId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(editPaymentForm),
+    });
+    if (!res.ok) return alert((await res.json()).error ?? t.errPayment);
+    setEditingPaymentId(null);
+    load();
+  }
+
+  async function deletePayment(paymentId: string) {
+    if (!confirm(t.confirmDeletePayment)) return;
+    const res = await fetch(`/api/client-payments/${paymentId}`, { method: "DELETE" });
+    if (!res.ok) return alert((await res.json()).error ?? t.errPayment);
     load();
   }
 
@@ -812,26 +839,49 @@ export default function ProjectDetailPage() {
               <th className="p-3 font-medium">{t.thPaymentDate}</th>
               <th className="p-3 font-medium">{t.thPaymentAmount}</th>
               <th className="p-3 font-medium">{t.thPaymentNotes}</th>
+              <th className="p-3 font-medium"></th>
             </tr>
           </thead>
           <tbody>
             {(project.clientPayments ?? []).length === 0 && (
-              <tr><td className="p-4 text-neutral-400" colSpan={3}>{t.noPayments}</td></tr>
+              <tr><td className="p-4 text-neutral-400" colSpan={4}>{t.noPayments}</td></tr>
             )}
-            {(project.clientPayments ?? []).map((p: any) => (
-              <tr key={p.id} className="border-t">
-                <td className="p-3">{new Date(p.date).toLocaleDateString(localeCode)}</td>
-                <td className="p-3 font-semibold text-success">{Number(p.amount).toLocaleString(localeCode)} {currency}</td>
-                <td className="p-3">{p.notes || "—"}</td>
-              </tr>
-            ))}
+            {(project.clientPayments ?? []).map((p: any) =>
+              editingPaymentId === p.id ? (
+                <tr key={p.id} className="border-t bg-neutral-50">
+                  <td className="p-2">
+                    <input type="date" value={editPaymentForm.date} onChange={(e) => setEditPaymentForm({ ...editPaymentForm, date: e.target.value })} className="w-full border rounded-lg px-2 py-1" />
+                  </td>
+                  <td className="p-2">
+                    <input type="number" step="0.01" value={editPaymentForm.amount} onChange={(e) => setEditPaymentForm({ ...editPaymentForm, amount: Number(e.target.value) })} className="w-full border rounded-lg px-2 py-1" />
+                  </td>
+                  <td className="p-2">
+                    <input value={editPaymentForm.notes} onChange={(e) => setEditPaymentForm({ ...editPaymentForm, notes: e.target.value })} className="w-full border rounded-lg px-2 py-1" />
+                  </td>
+                  <td className="p-2 flex gap-2">
+                    <button onClick={() => saveEditedPayment(p.id)} className="text-success text-xs font-medium">{t.savePaymentEdit}</button>
+                    <button onClick={() => setEditingPaymentId(null)} className="text-neutral-500 text-xs">{t.cancelPaymentEdit}</button>
+                  </td>
+                </tr>
+              ) : (
+                <tr key={p.id} className="border-t">
+                  <td className="p-3">{new Date(p.date).toLocaleDateString(localeCode)}</td>
+                  <td className="p-3 font-semibold text-success">{Number(p.amount).toLocaleString(localeCode)} {currency}</td>
+                  <td className="p-3">{p.notes || "—"}</td>
+                  <td className="p-3 flex gap-2">
+                    <button onClick={() => startEditPayment(p)} className="text-primary hover:opacity-70"><Pencil size={14} /></button>
+                    <button onClick={() => deletePayment(p.id)} className="text-danger hover:opacity-70"><Trash2 size={14} /></button>
+                  </td>
+                </tr>
+              )
+            )}
           </tbody>
           {(project.clientPayments ?? []).length > 0 && (
             <tfoot>
               <tr className="border-t bg-neutral-50 font-semibold">
                 <td className="p-3">{t.totalClientPaid}</td>
                 <td className="p-3 text-success">{totalClientPaid.toLocaleString(localeCode)} {currency}</td>
-                <td className="p-3"></td>
+                <td className="p-3" colSpan={2}></td>
               </tr>
             </tfoot>
           )}
