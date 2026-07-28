@@ -7,34 +7,20 @@ import { logAudit } from "@/lib/audit";
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const role = (session.user as any).role;
-  if (role !== "ADMIN" && role !== "MANAGER")
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if ((session.user as any).role !== "ADMIN")
+    return NextResponse.json({ error: "التعديل يتطلب صلاحية Admin" }, { status: 403 });
 
   const body = await req.json();
-  const status = body.status as string;
-  if (!["APPROVED", "REJECTED", "PENDING"].includes(status)) {
-    return NextResponse.json({ error: "حالة غير معروفة" }, { status: 400 });
-  }
-
-  const before = await prisma.leaveRequest.findUnique({ where: { id: params.id } });
+  const before = await prisma.warehouse.findUnique({ where: { id: params.id } });
   if (!before) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const leave = await prisma.leaveRequest.update({
+  const warehouse = await prisma.warehouse.update({
     where: { id: params.id },
-    data: { status: status as any },
+    data: { name: body.name ?? undefined, location: body.location ?? undefined },
   });
 
-  await logAudit({
-    userId: (session.user as any).id,
-    action: "LEAVE_REQUEST_UPDATED",
-    entityType: "LeaveRequest",
-    entityId: leave.id,
-    before,
-    after: leave,
-  });
-
-  return NextResponse.json(leave);
+  await logAudit({ userId: (session.user as any).id, action: "WAREHOUSE_UPDATED", entityType: "Warehouse", entityId: warehouse.id, before, after: warehouse });
+  return NextResponse.json(warehouse);
 }
 
 export async function DELETE(_req: Request, { params }: { params: { id: string } }) {
@@ -43,10 +29,12 @@ export async function DELETE(_req: Request, { params }: { params: { id: string }
   if ((session.user as any).role !== "ADMIN")
     return NextResponse.json({ error: "الحذف يتطلب صلاحية Admin" }, { status: 403 });
 
-  const before = await prisma.leaveRequest.findUnique({ where: { id: params.id } });
+  const before = await prisma.warehouse.findUnique({ where: { id: params.id }, include: { movements: true } });
   if (!before) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  if (before.movements.length > 0)
+    return NextResponse.json({ error: "لا يمكن حذف مخزن له حركات مسجلة" }, { status: 400 });
 
-  await prisma.leaveRequest.delete({ where: { id: params.id } });
-  await logAudit({ userId: (session.user as any).id, action: "LEAVE_REQUEST_DELETED", entityType: "LeaveRequest", entityId: params.id, before });
+  await prisma.warehouse.delete({ where: { id: params.id } });
+  await logAudit({ userId: (session.user as any).id, action: "WAREHOUSE_DELETED", entityType: "Warehouse", entityId: params.id, before });
   return NextResponse.json({ ok: true });
 }

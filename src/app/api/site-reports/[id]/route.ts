@@ -53,3 +53,38 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 
   return NextResponse.json(report);
 }
+
+export async function DELETE(_req: Request, { params }: { params: { id: string } }) {
+  const session = await getServerSession(authOptions);
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if ((session.user as any).role !== "ADMIN")
+    return NextResponse.json({ error: "الحذف يتطلب صلاحية Admin" }, { status: 403 });
+
+  const before = await prisma.siteDailyReport.findUnique({
+    where: { id: params.id },
+    include: { materialLogs: true },
+  });
+  if (!before) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+  await prisma.$transaction(async (tx) => {
+    const stockMovementIds = before.materialLogs.map((m) => m.stockMovementId).filter(Boolean) as string[];
+    if (stockMovementIds.length > 0) {
+      await tx.stockMovement.deleteMany({ where: { id: { in: stockMovementIds } } });
+    }
+    await tx.siteWorkerAttendance.deleteMany({ where: { reportId: params.id } });
+    await tx.siteEquipmentLog.deleteMany({ where: { reportId: params.id } });
+    await tx.siteMaterialLog.deleteMany({ where: { reportId: params.id } });
+    await tx.sitePhoto.deleteMany({ where: { reportId: params.id } });
+    await tx.siteDailyReport.delete({ where: { id: params.id } });
+  });
+
+  await logAudit({
+    userId: (session.user as any).id,
+    action: "SITE_DAILY_REPORT_DELETED",
+    entityType: "SiteDailyReport",
+    entityId: params.id,
+    before,
+  });
+
+  return NextResponse.json({ ok: true });
+}

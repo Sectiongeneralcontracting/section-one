@@ -62,3 +62,19 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 
   return NextResponse.json(subcontractor);
 }
+
+export async function DELETE(_req: Request, { params }: { params: { id: string } }) {
+  const session = await getServerSession(authOptions);
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if ((session.user as any).role !== "ADMIN")
+    return NextResponse.json({ error: "الحذف يتطلب صلاحية Admin" }, { status: 403 });
+
+  const before = await prisma.subcontractor.findUnique({ where: { id: params.id }, include: { contracts: true } });
+  if (!before) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  if (before.contracts.length > 0)
+    return NextResponse.json({ error: "لا يمكن حذف مقاول باطن له عقود مسجلة" }, { status: 400 });
+
+  await prisma.subcontractor.delete({ where: { id: params.id } });
+  await logAudit({ userId: (session.user as any).id, action: "SUBCONTRACTOR_DELETED", entityType: "Subcontractor", entityId: params.id, before });
+  return NextResponse.json({ ok: true });
+}

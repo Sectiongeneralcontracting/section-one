@@ -7,34 +7,24 @@ import { logAudit } from "@/lib/audit";
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const role = (session.user as any).role;
-  if (role !== "ADMIN" && role !== "MANAGER")
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if ((session.user as any).role !== "ADMIN")
+    return NextResponse.json({ error: "التعديل يتطلب صلاحية Admin" }, { status: 403 });
 
   const body = await req.json();
-  const status = body.status as string;
-  if (!["APPROVED", "REJECTED", "PENDING"].includes(status)) {
-    return NextResponse.json({ error: "حالة غير معروفة" }, { status: 400 });
-  }
-
-  const before = await prisma.leaveRequest.findUnique({ where: { id: params.id } });
+  const before = await prisma.employeePenalty.findUnique({ where: { id: params.id } });
   if (!before) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const leave = await prisma.leaveRequest.update({
+  const penalty = await prisma.employeePenalty.update({
     where: { id: params.id },
-    data: { status: status as any },
+    data: {
+      amount: body.amount ?? undefined,
+      date: body.date ? new Date(body.date) : undefined,
+      reason: body.reason ?? undefined,
+    },
   });
 
-  await logAudit({
-    userId: (session.user as any).id,
-    action: "LEAVE_REQUEST_UPDATED",
-    entityType: "LeaveRequest",
-    entityId: leave.id,
-    before,
-    after: leave,
-  });
-
-  return NextResponse.json(leave);
+  await logAudit({ userId: (session.user as any).id, action: "EMPLOYEE_PENALTY_UPDATED", entityType: "EmployeePenalty", entityId: penalty.id, before, after: penalty });
+  return NextResponse.json(penalty);
 }
 
 export async function DELETE(_req: Request, { params }: { params: { id: string } }) {
@@ -43,10 +33,10 @@ export async function DELETE(_req: Request, { params }: { params: { id: string }
   if ((session.user as any).role !== "ADMIN")
     return NextResponse.json({ error: "الحذف يتطلب صلاحية Admin" }, { status: 403 });
 
-  const before = await prisma.leaveRequest.findUnique({ where: { id: params.id } });
+  const before = await prisma.employeePenalty.findUnique({ where: { id: params.id } });
   if (!before) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  await prisma.leaveRequest.delete({ where: { id: params.id } });
-  await logAudit({ userId: (session.user as any).id, action: "LEAVE_REQUEST_DELETED", entityType: "LeaveRequest", entityId: params.id, before });
+  await prisma.employeePenalty.delete({ where: { id: params.id } });
+  await logAudit({ userId: (session.user as any).id, action: "EMPLOYEE_PENALTY_DELETED", entityType: "EmployeePenalty", entityId: params.id, before });
   return NextResponse.json({ ok: true });
 }

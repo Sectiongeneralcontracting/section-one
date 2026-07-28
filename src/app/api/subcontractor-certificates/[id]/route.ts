@@ -38,3 +38,19 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 
   return NextResponse.json(certificate);
 }
+
+export async function DELETE(_req: Request, { params }: { params: { id: string } }) {
+  const session = await getServerSession(authOptions);
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if ((session.user as any).role !== "ADMIN")
+    return NextResponse.json({ error: "الحذف يتطلب صلاحية Admin" }, { status: 403 });
+
+  const before = await prisma.subcontractorCertificate.findUnique({ where: { id: params.id } });
+  if (!before) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  if (before.status !== "DRAFT")
+    return NextResponse.json({ error: "مينفعش تحذف مستخلص اتقدّم أو اتعمد بالفعل" }, { status: 400 });
+
+  await prisma.subcontractorCertificate.delete({ where: { id: params.id } });
+  await logAudit({ userId: (session.user as any).id, action: "SUBCONTRACTOR_CERTIFICATE_DELETED", entityType: "SubcontractorCertificate", entityId: params.id, before });
+  return NextResponse.json({ ok: true });
+}

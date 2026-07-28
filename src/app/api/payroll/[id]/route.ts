@@ -48,3 +48,19 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 
   return NextResponse.json(record);
 }
+
+export async function DELETE(_req: Request, { params }: { params: { id: string } }) {
+  const session = await getServerSession(authOptions);
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if ((session.user as any).role !== "ADMIN")
+    return NextResponse.json({ error: "الحذف يتطلب صلاحية Admin" }, { status: 403 });
+
+  const before = await prisma.payrollRecord.findUnique({ where: { id: params.id } });
+  if (!before) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  if (before.status !== "DRAFT")
+    return NextResponse.json({ error: "مينفعش تحذف راتب اتعمد أو اتصرف بالفعل" }, { status: 400 });
+
+  await prisma.payrollRecord.delete({ where: { id: params.id } });
+  await logAudit({ userId: (session.user as any).id, action: "PAYROLL_DELETED", entityType: "PayrollRecord", entityId: params.id, before });
+  return NextResponse.json({ ok: true });
+}

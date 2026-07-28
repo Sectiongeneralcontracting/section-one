@@ -7,34 +7,25 @@ import { logAudit } from "@/lib/audit";
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const role = (session.user as any).role;
-  if (role !== "ADMIN" && role !== "MANAGER")
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if ((session.user as any).role !== "ADMIN")
+    return NextResponse.json({ error: "التعديل يتطلب صلاحية Admin" }, { status: 403 });
 
   const body = await req.json();
-  const before = await prisma.equipment.findUnique({ where: { id: params.id } });
+  const before = await prisma.inventoryItem.findUnique({ where: { id: params.id } });
   if (!before) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const equipment = await prisma.equipment.update({
+  const item = await prisma.inventoryItem.update({
     where: { id: params.id },
     data: {
       name: body.name ?? undefined,
-      type: body.type ?? undefined,
-      status: body.status ?? undefined,
+      unit: body.unit ?? undefined,
+      reorderLevel: body.reorderLevel ?? undefined,
       notes: body.notes ?? undefined,
     },
   });
 
-  await logAudit({
-    userId: (session.user as any).id,
-    action: "EQUIPMENT_UPDATED",
-    entityType: "Equipment",
-    entityId: equipment.id,
-    before,
-    after: equipment,
-  });
-
-  return NextResponse.json(equipment);
+  await logAudit({ userId: (session.user as any).id, action: "INVENTORY_ITEM_UPDATED", entityType: "InventoryItem", entityId: item.id, before, after: item });
+  return NextResponse.json(item);
 }
 
 export async function DELETE(_req: Request, { params }: { params: { id: string } }) {
@@ -43,12 +34,12 @@ export async function DELETE(_req: Request, { params }: { params: { id: string }
   if ((session.user as any).role !== "ADMIN")
     return NextResponse.json({ error: "الحذف يتطلب صلاحية Admin" }, { status: 403 });
 
-  const before = await prisma.equipment.findUnique({ where: { id: params.id }, include: { assignments: true, maintenanceLogs: true } });
+  const before = await prisma.inventoryItem.findUnique({ where: { id: params.id }, include: { movements: true } });
   if (!before) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  if (before.assignments.length > 0 || before.maintenanceLogs.length > 0)
-    return NextResponse.json({ error: "لا يمكن حذف معدة لها سجلات تخصيص أو صيانة" }, { status: 400 });
+  if (before.movements.length > 0)
+    return NextResponse.json({ error: "لا يمكن حذف صنف له حركات مخزون مسجلة" }, { status: 400 });
 
-  await prisma.equipment.delete({ where: { id: params.id } });
-  await logAudit({ userId: (session.user as any).id, action: "EQUIPMENT_DELETED", entityType: "Equipment", entityId: params.id, before });
+  await prisma.inventoryItem.delete({ where: { id: params.id } });
+  await logAudit({ userId: (session.user as any).id, action: "INVENTORY_ITEM_DELETED", entityType: "InventoryItem", entityId: params.id, before });
   return NextResponse.json({ ok: true });
 }
