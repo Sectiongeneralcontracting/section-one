@@ -14,6 +14,7 @@ const dict = {
     thQuantity: "الكمية", thProject: "المشروع", thNotes: "ملاحظات",
     inLabel: "وارد", outLabel: "منصرف",
     loading: "جارٍ التحميل...", empty: "لا يوجد حركات مسجلة بعد.",
+    truncatedWarning: "بيتم عرض أحدث 200 حركة بس. فيه حركات أقدم مش ظاهرة — استخدم الفلترة بالصنف أو المخزن عشان تشوفها.",
     confirmDelete: "تأكيد حذف الحركة؟ ده هيغيّر رصيد الصنف فورًا. العملية لا يمكن التراجع عنها.",
     errDelete: "تعذر حذف الحركة",
   },
@@ -25,6 +26,7 @@ const dict = {
     thQuantity: "Quantity", thProject: "Project", thNotes: "Notes",
     inLabel: "In", outLabel: "Out",
     loading: "Loading...", empty: "No movements recorded yet.",
+    truncatedWarning: "Showing the latest 200 movements only. Older movements exist but aren't shown — use item/warehouse filters to find them.",
     confirmDelete: "Confirm deleting this movement? This will immediately change the item's balance. This cannot be undone.",
     errDelete: "Failed to delete movement",
   },
@@ -36,6 +38,7 @@ export default function StockMovementsPage() {
   const localeCode = locale === "ar" ? "ar-EG-u-nu-latn" : "en-US";
 
   const [movements, setMovements] = useState<any[]>([]);
+  const [truncatedInfo, setTruncatedInfo] = useState<{ truncated: boolean; totalCount: number } | null>(null);
   const [items, setItems] = useState<any[]>([]);
   const [warehouses, setWarehouses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -52,7 +55,11 @@ export default function StockMovementsPage() {
       fetch("/api/inventory-items"),
       fetch("/api/warehouses"),
     ]);
-    if (mRes.ok) setMovements(await mRes.json());
+    if (mRes.ok) {
+      const data = await mRes.json();
+      setMovements(data.movements);
+      setTruncatedInfo({ truncated: data.truncated, totalCount: data.totalCount });
+    }
     if (iRes.ok) setItems(await iRes.json());
     if (wRes.ok) setWarehouses(await wRes.json());
     setLoading(false);
@@ -85,6 +92,10 @@ export default function StockMovementsPage() {
           </select>
         </div>
       </div>
+
+      {truncatedInfo?.truncated && (
+        <p className="text-sm text-warning bg-warning/10 border border-warning/20 rounded-xl px-4 py-2">{t.truncatedWarning}</p>
+      )}
 
       <div className="card !p-0 overflow-hidden">
         <table className="w-full text-sm">

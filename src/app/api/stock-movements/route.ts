@@ -24,13 +24,16 @@ export async function GET(req: Request) {
   const itemId = searchParams.get("itemId") ?? undefined;
   const warehouseId = searchParams.get("warehouseId") ?? undefined;
 
-  const movements = await prisma.stockMovement.findMany({
-    where: { itemId, warehouseId },
-    include: { item: true, warehouse: true, project: true },
-    orderBy: { date: "desc" },
-    take: 200,
-  });
-  return NextResponse.json(movements);
+  const [movements, totalCount] = await Promise.all([
+    prisma.stockMovement.findMany({
+      where: { itemId, warehouseId },
+      include: { item: true, warehouse: true, project: true },
+      orderBy: { date: "desc" },
+      take: 200,
+    }),
+    prisma.stockMovement.count({ where: { itemId, warehouseId } }),
+  ]);
+  return NextResponse.json({ movements, totalCount, truncated: totalCount > movements.length });
 }
 
 export async function POST(req: Request) {

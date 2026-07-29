@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { useLocale } from "@/lib/use-locale";
 
@@ -15,6 +15,8 @@ const dict = {
     submit: "دخول",
     loading: "جارٍ الدخول...",
     error: "بيانات الدخول غير صحيحة",
+    lockedError: "الحساب مقفول مؤقتًا بسبب محاولات دخول فاشلة متكررة. حاول تاني بعد 15 دقيقة.",
+    sessionExpired: "انتهت صلاحية جلستك (أو تم تعديل حسابك من الإدارة) — سجّل دخول تاني.",
     switchTo: "English",
   },
   en: {
@@ -25,18 +27,36 @@ const dict = {
     submit: "Sign In",
     loading: "Signing in...",
     error: "Invalid email or password",
+    lockedError: "Account temporarily locked due to repeated failed attempts. Try again in 15 minutes.",
+    sessionExpired: "Your session has expired (or your account was updated by an admin) — please sign in again.",
     switchTo: "العربية",
   },
 };
 
 export default function LoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <LoginForm />
+    </Suspense>
+  );
+}
+
+function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const locale = useLocale();
   const t = dict[locale];
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (searchParams.get("reason") === "session-expired") {
+      setError(t.sessionExpired);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -45,7 +65,7 @@ export default function LoginPage() {
     const res = await signIn("credentials", { email, password, redirect: false });
     setLoading(false);
     if (res?.error) {
-      setError(t.error);
+      setError(res.error.includes("مقفول") || res.error.toLowerCase().includes("locked") ? t.lockedError : t.error);
       return;
     }
     router.push("/dashboard");
