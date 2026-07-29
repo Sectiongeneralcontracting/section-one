@@ -48,6 +48,7 @@ model User {
   passwordHash  String
   role          Role     @default(VIEWER)
   isActive      Boolean  @default(true)
+  passwordChangedAt DateTime? // بيتحدّث مع أي تغيير لكلمة السر — أي جلسة (JWT) صدرت قبل التاريخ ده بترفض تلقائيًا
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
@@ -1102,6 +1103,9 @@ enum NotificationType {
   ATTENDANCE_PENDING_APPROVAL
   QUOTATION_ACCEPTED
   QUOTATION_CONVERTED
+  USER_PASSWORD_RESET
+  USER_DEACTIVATED
+  USER_ROLE_CHANGED
 }
 
 model Notification {
