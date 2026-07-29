@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { logAudit } from "@/lib/audit";
-import { CLIENT_DATA, CONTRACTS_SEED_V2 } from "@/lib/import-data/raya-foodz-contracts-v2";
+import { CLIENT_DATA, CONTRACTS_SEED_V3 as CONTRACTS_SEED_V2 } from "@/lib/import-data/raya-foodz-contracts-v3";
 
 export async function POST() {
   const session = await getServerSession(authOptions);

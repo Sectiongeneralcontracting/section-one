@@ -401,6 +401,28 @@ export default function SettingsPage() {
           </label>
         </div>
       </div>
+
+      <div className="card space-y-3 border-danger/30">
+        <h2 className="font-semibold">تحديث عقود رايه فودز (نسخة PDF جديدة — 29 يوليو)</h2>
+        <p className="text-sm text-neutral-500">
+          هيستبدل جدول الكميات وقيمة العقد لكل المشاريع العشرة برايه فودز بالبيانات الجديدة المستخرجة من ملفات الـ PDF.
+          سبع عقود منهم بند-ببند مطابق تمامًا للإجمالي المطبوع في العقد. تلات عقود (الصيانة 2025، الصيانة 2026، الصيانة القديمة)
+          هيكل بنودهم اتغيّر عن النسخة السابقة، فاتسجلوا ببند إجمالي واحد بس (القيمة صحيحة 100% ومتحقق منها رياضيًا، لكن التفصيل الكامل محتاج مراجعة يدوية من نسخة العقد).
+          لو أي عقد عليه مستخلصات مسجلة قبل كده، هيظهرلك تحذير بجانبه بعد التنفيذ.
+        </p>
+        <button
+          onClick={async () => {
+            if (!confirm("تأكيد استبدال بيانات العقود العشرة بالنسخة الجديدة؟ العملية هتحدّث المشاريع الموجودة.")) return;
+            const res = await fetch("/api/admin/replace-contracts", { method: "POST" });
+            const data = await res.json();
+            if (!res.ok) return alert(data.error ?? "تعذر الاستبدال");
+            alert(data.results.map((r: any) => `${r.project}: ${r.status}`).join("\n\n"));
+          }}
+          className="bg-danger text-white rounded-xl px-5 py-2 text-sm font-medium"
+        >
+          تنفيذ الاستبدال
+        </button>
+      </div>
       </>
       )}
     </AppShell>
